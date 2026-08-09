@@ -39,6 +39,13 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
     dynamic_weights = portfolio_data["dynamic_weights"]
     cash_value = portfolio_data["cash_value"]
 
+    # ---- 计算相比263000的增减百分比 ----
+    base_value = 263000
+    change_amount = total_assets - base_value
+    change_pct = (change_amount / base_value) * 100
+    change_arrow = "↑" if change_amount >= 0 else "↓"
+    change_class = "up" if change_amount >= 0 else "down"
+
     # ---- 投资明细表行 ----
     fund_rows = []
     for fund in funds:
@@ -202,13 +209,11 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
     }}
     .total-breakdown {{
       margin-top: 20px;
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
-      flex-wrap: wrap;
     }}
     .breakdown-item {{
-      flex: 1;
-      min-width: 140px;
       padding: 12px 16px;
       background: #f8fafc;
       border-radius: 8px;
@@ -226,6 +231,12 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
       color: #1e293b;
       font-variant-numeric: tabular-nums;
       margin-top: 4px;
+    }}
+    .breakdown-item .b-value.up {{
+      color: #dc2626;
+    }}
+    .breakdown-item .b-value.down {{
+      color: #059669;
     }}
 
     /* 信号区块 */
@@ -295,9 +306,13 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
     .trend-container {{
       position: relative;
       width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 12px;
     }}
     #trendChart {{
       width: 100%;
+      min-width: 600px;
       height: 400px;
       display: block;
     }}
@@ -402,8 +417,6 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
         gap: 10px;
       }}
       .breakdown-item {{
-        min-width: 0;
-        flex: 1 1 calc(50% - 5px);
         padding: 10px 12px;
       }}
       .breakdown-item .b-value {{
@@ -475,9 +488,6 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
     @media (max-width: 380px) {{
       .header h1 {{ font-size: 18px; }}
       .total-assets-box .value {{ font-size: 26px; }}
-      .breakdown-item {{
-        flex: 1 1 100%;
-      }}
       #trendChart {{ height: 240px; }}
     }}
   </style>
@@ -511,6 +521,10 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
         <div class="breakdown-item">
           <div class="b-label">基金数量</div>
           <div class="b-value">{len(funds)}</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-label">相比263000</div>
+          <div class="b-value {change_class}">{change_arrow} {change_pct:+.2f}%</div>
         </div>
       </div>
     </div>
@@ -607,11 +621,11 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * dpr;
-      canvas.height = 400 * dpr;
+      canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
 
       const W = rect.width;
-      const H = 400;
+      const H = rect.height;
       const padL = 70, padR = 30, padT = 50, padB = 50;
       const chartW = W - padL - padR;
       const chartH = H - padT - padB;

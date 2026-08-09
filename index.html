@@ -93,13 +93,11 @@
     }
     .total-breakdown {
       margin-top: 20px;
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
-      flex-wrap: wrap;
     }
     .breakdown-item {
-      flex: 1;
-      min-width: 140px;
       padding: 12px 16px;
       background: #f8fafc;
       border-radius: 8px;
@@ -117,6 +115,12 @@
       color: #1e293b;
       font-variant-numeric: tabular-nums;
       margin-top: 4px;
+    }
+    .breakdown-item .b-value.up {
+      color: #dc2626;
+    }
+    .breakdown-item .b-value.down {
+      color: #059669;
     }
 
     /* 信号区块 */
@@ -186,9 +190,13 @@
     .trend-container {
       position: relative;
       width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 12px;
     }
     #trendChart {
       width: 100%;
+      min-width: 600px;
       height: 400px;
       display: block;
     }
@@ -293,8 +301,6 @@
         gap: 10px;
       }
       .breakdown-item {
-        min-width: 0;
-        flex: 1 1 calc(50% - 5px);
         padding: 10px 12px;
       }
       .breakdown-item .b-value {
@@ -366,9 +372,6 @@
     @media (max-width: 380px) {
       .header h1 { font-size: 18px; }
       .total-assets-box .value { font-size: 26px; }
-      .breakdown-item {
-        flex: 1 1 100%;
-      }
       #trendChart { height: 240px; }
     }
   </style>
@@ -379,7 +382,7 @@
     <!-- 头部 -->
     <div class="header">
       <h1>Overseas Treasury</h1>
-      <div class="update-time">最后更新: 2026-08-09 21:17:54 CST</div>
+      <div class="update-time">最后更新: 2026-08-09 21:36:57 CST</div>
     </div>
 
     <!-- 第一板块：资产总额 -->
@@ -402,6 +405,10 @@
         <div class="breakdown-item">
           <div class="b-label">基金数量</div>
           <div class="b-value">3</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-label">相比263000</div>
+          <div class="b-value up">↑ +22.71%</div>
         </div>
       </div>
     </div>
@@ -552,11 +559,11 @@
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * dpr;
-      canvas.height = 400 * dpr;
+      canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
 
       const W = rect.width;
-      const H = 400;
+      const H = rect.height;
       const padL = 70, padR = 30, padT = 50, padB = 50;
       const chartW = W - padL - padR;
       const chartH = H - padT - padB;
