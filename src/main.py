@@ -94,10 +94,22 @@ def main():
         print(f"  {fund['name_cn']}: ${mv:,.0f} ({w*100:.1f}%)")
     print(f"  现金和存款: ${portfolio_data['cash_value']:,.0f} ({portfolio_data['dynamic_weights']['cash']*100:.1f}%)")
 
-    # 4. 生成信号
+    # 4. 加载月度净值历史（5年回溯，用于价格分位数计算）
+    monthly_nav_path = config_path.parent / "data" / "monthly_nav_history.json"
+    monthly_nav_history = {}
+    if monthly_nav_path.exists():
+        with open(monthly_nav_path, "r", encoding="utf-8") as f:
+            try:
+                monthly_nav_history = json.load(f)
+            except json.JSONDecodeError:
+                monthly_nav_history = {}
+    total_monthly = sum(len(v.get("monthly_nav", [])) for v in monthly_nav_history.values())
+    print(f"\n  月度净值历史: {total_monthly} 条记录（3只基金 × 5年回溯）")
+
+    # 5. 生成信号
     print("\n[3/4] 生成量化信号...")
     engine = SignalEngine(config, portfolio_data)
-    signal_result = engine.generate_all_signals(nav_data, nav_history_series)
+    signal_result = engine.generate_all_signals(nav_data, nav_history_series, monthly_nav_history)
 
     summary = signal_result["summary"]
     print(f"  综合信号: {summary['overall_signal']}")
@@ -114,16 +126,13 @@ def main():
         if sig.get("suggested_action"):
             print(f"      → {sig['suggested_action']['description']}")
 
-    # 5. 加载月度净值历史
-    monthly_nav_path = config_path.parent / "data" / "monthly_nav_history.json"
-    monthly_nav_history = {}
-    if monthly_nav_path.exists():
-        with open(monthly_nav_path, "r", encoding="utf-8") as f:
-            try:
-                monthly_nav_history = json.load(f)
-            except json.JSONDecodeError:
-                monthly_nav_history = {}
-    print(f"  月度净值历史: {sum(len(v.get('monthly_nav', [])) for v in monthly_nav_history.values())} 条记录")
+    # 打印价格分位数详情
+    if "percentile_details" in signal_result:
+        print("\n  价格分位数（5年历史回溯）:")
+        for fid, detail in signal_result["percentile_details"].items():
+            pct = detail["percentile"]
+            bar = "█" * int(pct / 5) + "░" * (20 - int(pct / 5))
+            print(f"    {detail['fund_name']}: [{bar}] {pct:.1f}%  (高:{detail['hist_high']:.2f} 低:{detail['hist_low']:.2f} 现:{detail['current_nav']:.2f})")
 
     # 6. 生成HTML报告
     print("\n[4/4] 生成HTML报告...")

@@ -86,6 +86,57 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
     sell_section = _build_signal_section(signal_result["sell_signals"], "sell")
     buy_section = _build_signal_section(signal_result["buy_signals"], "buy")
 
+    # ---- 价格分位数区块 ----
+    percentile_details = signal_result.get("percentile_details", {})
+    percentile_rows = []
+    for fund in funds:
+        fid = fund["id"]
+        detail = percentile_details.get(fid, {})
+        pct = detail.get("percentile", 50.0)
+        hist_high = detail.get("hist_high", 0)
+        hist_low = detail.get("hist_low", 0)
+        current = detail.get("current_nav", 0)
+        source = detail.get("source", "")
+
+        # 根据分位数选择颜色
+        if pct >= 95:
+            bar_color = "#dc2626"  # 红色 - 极端高位
+            status = "极端高位"
+        elif pct >= 85:
+            bar_color = "#f97316"  # 橙色 - 高位预警
+            status = "高位预警"
+        elif pct <= 10:
+            bar_color = "#16a34a"  # 绿色 - 极端低位
+            status = "极端低位"
+        elif pct <= 20:
+            bar_color = "#22c55e"  # 浅绿 - 低位机会
+            status = "低位机会"
+        else:
+            bar_color = "#3b82f6"  # 蓝色 - 正常区间
+            status = "正常区间"
+
+        bar_width = min(max(pct, 2), 100)
+        percentile_rows.append(f"""
+        <div class="pct-item">
+          <div class="pct-header">
+            <span class="pct-name">{fund['name_cn']}</span>
+            <span class="pct-status" style="color:{bar_color}">{status}</span>
+          </div>
+          <div class="pct-bar-container">
+            <div class="pct-bar" style="width:{bar_width:.1f}%;background:{bar_color}"></div>
+            <div class="pct-threshold" style="left:10%"></div>
+            <div class="pct-threshold" style="left:20%"></div>
+            <div class="pct-threshold" style="left:85%"></div>
+            <div class="pct-threshold" style="left:95%"></div>
+          </div>
+          <div class="pct-labels">
+            <span>0%</span>
+            <span class="pct-value" style="color:{bar_color};font-weight:bold">{pct:.1f}%</span>
+            <span>100%</span>
+          </div>
+          <div class="pct-detail">5年高: {hist_high:.2f} | 5年低: {hist_low:.2f} | 当前: {current:.2f}</div>
+        </div>""")
+
     # ---- 月度趋势图数据 ----
     trend_months = []
     fund_trend_data = {}
@@ -106,10 +157,10 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
             fund_trend_data[fid] = {
                 "label": fund_labels.get(fid, fid),
                 "color": fund_colors.get(fid, "#6366f1"),
-                "data": [{"month": m["month"], "nav": m["nav"]} for m in monthly],
+                "data": [{"month": m["date"], "nav": m["nav"]} for m in monthly],
             }
             if not trend_months:
-                trend_months = [m["month"] for m in monthly]
+                trend_months = [m["date"] for m in monthly]
 
     trend_json = json.dumps(fund_trend_data, ensure_ascii=False)
     months_json = json.dumps(trend_months, ensure_ascii=False)
@@ -350,6 +401,47 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
       width: 8px; height: 8px; border-radius: 50%;
     }}
 
+    /* 价格分位数 */
+    .percentile-section .section-desc {{
+      font-size: 13px; color: #64748b; margin: 4px 0 16px;
+    }}
+    .pct-item {{
+      margin-bottom: 20px;
+    }}
+    .pct-header {{
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px;
+    }}
+    .pct-name {{
+      font-size: 14px; font-weight: 600; color: #1e293b;
+    }}
+    .pct-status {{
+      font-size: 13px; font-weight: 600;
+    }}
+    .pct-bar-container {{
+      position: relative; width: 100%; height: 24px;
+      background: #f1f5f9; border-radius: 12px; overflow: visible;
+    }}
+    .pct-bar {{
+      height: 100%; border-radius: 12px;
+      transition: width 0.6s ease;
+      min-width: 4px;
+    }}
+    .pct-threshold {{
+      position: absolute; top: 0; bottom: 0;
+      width: 2px; background: #cbd5e1; opacity: 0.7;
+    }}
+    .pct-labels {{
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 4px; font-size: 12px; color: #94a3b8;
+    }}
+    .pct-value {{
+      font-size: 14px;
+    }}
+    .pct-detail {{
+      font-size: 12px; color: #64748b; margin-top: 2px;
+    }}
+
     /* 规则说明 */
     .rules-section h3 {{
       font-size: 15px; margin: 16px 0 8px; color: #2c5282;
@@ -473,6 +565,12 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
         font-size: 12px;
       }}
 
+      /* 价格分位数 */
+      .pct-name {{ font-size: 13px; }}
+      .pct-status {{ font-size: 12px; }}
+      .pct-detail {{ font-size: 11px; }}
+      .pct-bar-container {{ height: 20px; }}
+
       /* 规则说明 */
       .rules-section h3 {{ font-size: 14px; }}
       .rules-section li {{
@@ -561,11 +659,18 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
 
     <!-- 第三板块：净值趋势 -->
     <div class="card">
-      <h2>净值趋势 (2025年1月至今 · 月末净值)</h2>
+      <h2>净值趋势 (2021年1月至今 · 月末净值 · 5年回溯)</h2>
       <div class="trend-container">
         <canvas id="trendChart"></canvas>
         <div id="chartTooltip"></div>
       </div>
+    </div>
+
+    <!-- 价格分位数板块 -->
+    <div class="card percentile-section">
+      <h2>价格分位数 (5年历史回溯 · 2021年1月起)</h2>
+      <p class="section-desc">当前净值在5年历史区间中的相对位置。分位数越高，回调风险越大；越低则处于布局机会区。</p>
+      {''.join(percentile_rows) if percentile_rows else '<div class="no-signal">暂无历史数据</div>'}
     </div>
 
     <!-- 第四板块：规则说明 -->
@@ -573,10 +678,11 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
       <h2>量化信号规则说明</h2>
       <h3>卖出规则</h3>
       <ul>
-        <li><code>S-01</code>止盈止损: 累计收益 ≥+15%触发止盈, ≥+25%强止盈; ≤-8%止损预警, ≤-12%强止损</li>
+        <li><code>S-01</code>止盈止损: 累计收益 ≥+15%触发止盈, ≥+25%强止盈; ≤-8%止损预警, ≤-12%强止损（价格分位数调制）</li>
         <li><code>S-02</code>趋势反转: MA5下穿MA20（死叉）</li>
         <li><code>S-04</code>仓位偏离: 当前权重超出目标权重+3%，触发再平衡减仓</li>
         <li><code>S-05</code>急跌熔断: 5日跌幅>15%，暂停自动操作，转人工复核</li>
+        <li><code>S-06</code>历史高位: 价格分位数 &gt;85% 高位预警，&gt;95% 极端高位强信号（5年回溯）</li>
       </ul>
       <h3>买入规则</h3>
       <ul>
@@ -584,6 +690,13 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
         <li><code>B-03</code>回撤企稳: 从高点回撤15%-25%且近3日波动&lt;1%</li>
         <li><code>B-04</code>现金过多: 现金仓位&gt;30%，建议配置</li>
         <li><code>B-05</code>仓位不足: 当前权重低于目标权重-3%，触发再平衡加仓</li>
+        <li><code>B-06</code>历史低位: 价格分位数 &lt;20% 低位机会，&lt;10% 极端低位强信号（5年回溯）</li>
+      </ul>
+      <h3>价格分位数（5年历史回溯，2021年1月起）</h3>
+      <ul>
+        <li>分位数 = (当前净值 − 5年最低) / (5年最高 − 5年最低) × 100%</li>
+        <li>数据来源: Morningstar月度净值 API，覆盖2021-01至今约68个月度数据点</li>
+        <li>分位数越高，当前价格越接近历史高点，回调风险越大；反之则处于历史低位</li>
       </ul>
       <h3>信号强度</h3>
       <ul>

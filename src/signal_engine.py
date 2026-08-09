@@ -8,16 +8,24 @@
 
 【卖出/赎回信号】
   S-01 止盈止损: 累计收益率触及止盈线(+15%~+25%)或止损线(-8%~-12%)
+                 ※ 价格分位数调制：高位时降低止盈门槛，低位时提高止损容忍
   S-02 趋势反转: MA5下穿MA20（死叉），或MA20下穿MA60
   S-03 估值过高: PE分位数 > 80%（危险区）
   S-04 仓位偏离: 持仓权重超出目标权重 +3%以上，触发再平衡减仓
   S-05 急跌熔断: 5个交易日内跌幅超15%，触发人工复核（不自动卖出）
+  S-06 历史高位: 价格分位数 > 85%（高位预警）或 > 95%（极端高位，强信号）
 
 【买入/申购信号】
   B-02 趋势确立: MA5上穿MA20（金叉），且成交量放大
   B-03 回撤修复: 净值从高点回撤15%-25%后企稳
   B-04 现金过多: 现金仓位超过30%，建议配置
   B-05 仓位不足: 持仓权重低于目标权重 -3%以上，触发再平衡加仓
+  B-06 历史低位: 价格分位数 < 20%（低位机会）或 < 10%（极端低位，强信号）
+
+【价格分位数 Price Percentile Rank】
+  分位数 = (当前净值 - 历史最低) / (历史最高 - 历史最低) × 100
+  综合日度净值历史和月度净值历史，取最长可用区间计算
+  分位数越高，当前价格越接近历史高点，回调风险越大
 
 【信号强度分级】
   强信号(立即执行): ≥3条核心规则同时触发
@@ -59,6 +67,122 @@ class SignalEngine:
             return 0.0
         return (peak - current) / peak
 
+    def calculate_price_percentile(self, daily_history, monthly_history=None):
+        """计算价格分位数 (0-100)
+        优先使用月度净值历史（5年回溯，数据源一致），
+        月度数据不足时回退到日度历史。
+        分位数 = (当前 - 最低) / (最高 - 最低) × 100
+        """
+        # 优先使用月度历史：数据源一致，覆盖5年区间
+        if monthly_history:
+            monthly_navs = [m["nav"] for m in monthly_history.get("monthly_nav", [])]
+            if len(monthly_navs) >= 5:
+                hist_max = max(monthly_navs)
+                hist_min = min(monthly_navs)
+                current = monthly_navs[-1]
+                if hist_max == hist_min:
+                    return 50.0
+                return (current - hist_min) / (hist_max - hist_min) * 100
+
+        # 回退：使用日度历史
+        all_navs = list(daily_history) if daily_history else []
+        if len(all_navs) < 5:
+            return 50.0
+        hist_max = max(all_navs)
+        hist_min = min(all_navs)
+        current = all_navs[-1]
+        if hist_max == hist_min:
+            return 50.0
+        return (current - hist_min) / (hist_max - hist_min) * 100
+
+    def get_percentile_detail(self, daily_history, monthly_history=None):
+        """获取价格分位数的详细信息（用于报告展示）"""
+        if monthly_history:
+            monthly_navs = [m["nav"] for m in monthly_history.get("monthly_nav", [])]
+            if len(monthly_navs) >= 5:
+                hist_max = max(monthly_navs)
+                hist_min = min(monthly_navs)
+                current = monthly_navs[-1]
+                source = f"月度历史（{monthly_history.get('start_date', 'N/A')}起，{len(monthly_navs)}个数据点）"
+                if hist_max == hist_min:
+                    return {"percentile": 50.0, "high": hist_max, "low": hist_min, "current": current, "source": source}
+                pct = (current - hist_min) / (hist_max - hist_min) * 100
+                return {"percentile": pct, "high": hist_max, "low": hist_min, "current": current, "source": source}
+
+        all_navs = list(daily_history) if daily_history else []
+        if len(all_navs) < 5:
+            return {"percentile": 50.0, "high": 0, "low": 0, "current": 0, "source": "数据不足"}
+        hist_max = max(all_navs)
+        hist_min = min(all_navs)
+        current = all_navs[-1]
+        source = f"日度历史（{len(all_navs)}个数据点）"
+        if hist_max == hist_min:
+            return {"percentile": 50.0, "high": hist_max, "low": hist_min, "current": current, "source": source}
+        pct = (current - hist_min) / (hist_max - hist_min) * 100
+        return {"percentile": pct, "high": hist_max, "low": hist_min, "current": current, "source": source}
+
+    def check_price_position(self, fund_id, daily_history, monthly_history=None):
+        """S-06 / B-06: 基于历史价格位置生成信号"""
+        signals = []
+        percentile = self.calculate_price_percentile(daily_history, monthly_history)
+        if percentile == 50.0 and len(daily_history) < 5 and not monthly_history:
+            return signals
+
+        fund = next((f for f in self.funds if f["id"] == fund_id), None)
+        if not fund:
+            return signals
+
+        pct_high = self.rules["price_percentile_high"]
+        pct_extreme = self.rules["price_percentile_extreme"]
+        pct_low = self.rules["price_percentile_low"]
+        pct_extreme_low = self.rules["price_percentile_extreme_low"]
+
+        if percentile >= pct_extreme:
+            signals.append({
+                "rule": "S-06", "name": "历史极端高位（强）",
+                "detail": f"{fund['name_cn']} 当前价格分位数 {percentile:.1f}%（高于{pct_extreme}%极端线），处于历史极高位置，回调风险极大，建议立即减仓",
+                "action": "sell", "strength": "strong", "score": 35,
+                "suggested_action": self._build_redeem_suggestion(fund_id, "strong"),
+            })
+        elif percentile >= pct_high:
+            signals.append({
+                "rule": "S-06", "name": "历史高位预警",
+                "detail": f"{fund['name_cn']} 当前价格分位数 {percentile:.1f}%（高于{pct_high}%警戒线），接近历史高位，需警惕回调风险",
+                "action": "sell", "strength": "medium", "score": 20,
+                "suggested_action": self._build_redeem_suggestion(fund_id, "medium"),
+            })
+
+        if percentile <= pct_extreme_low:
+            signals.append({
+                "rule": "B-06", "name": "历史极端低位（强）",
+                "detail": f"{fund['name_cn']} 当前价格分位数 {percentile:.1f}%（低于{pct_extreme_low}%极端线），处于历史极低位置，中长期布局良机",
+                "action": "buy", "strength": "strong", "score": 35,
+                "suggested_action": self._build_buy_suggestion(fund_id),
+            })
+        elif percentile <= pct_low:
+            signals.append({
+                "rule": "B-06", "name": "历史低位机会",
+                "detail": f"{fund['name_cn']} 当前价格分位数 {percentile:.1f}%（低于{pct_low}%机会线），处于历史低位区间，可考虑逢低布局",
+                "action": "buy", "strength": "medium", "score": 20,
+            })
+        return signals
+
+    def _build_buy_suggestion(self, fund_id):
+        """构建买入建议"""
+        fund = next((f for f in self.funds if f["id"] == fund_id), None)
+        if not fund:
+            return None
+        current_value = self.fund_market_values.get(fund_id, 0)
+        target_value = self.total_value * fund["target_weight"]
+        buy_amount = target_value - current_value
+        if buy_amount <= 0:
+            buy_amount = self.cash_value * 0.1
+        return {
+            "type": "buy", "fund": fund["name_cn"],
+            "amount": round(buy_amount, 2),
+            "description": f"建议申购 {fund['name_cn']} 约 ${buy_amount:,.0f}，把握历史低位布局机会",
+        }
+
     def calculate_moving_averages(self, nav_history):
         ma_short = self.rules["ma_short"]
         ma_mid = self.rules["ma_mid"]
@@ -96,7 +220,7 @@ class SignalEngine:
             })
         return signals
 
-    def check_stop_profit_loss(self, fund_id, current_nav, cost_nav):
+    def check_stop_profit_loss(self, fund_id, current_nav, cost_nav, percentile=None):
         signals = []
         returns = self.calculate_returns(current_nav, cost_nav)
         sp_low = self.rules["stop_profit_low"]
@@ -104,32 +228,53 @@ class SignalEngine:
         sl_low = self.rules["stop_loss_low"]
         sl_high = self.rules["stop_loss_high"]
 
+        # 价格位置调制：高位时降低止盈门槛，低位时放宽止损容忍
+        pct_ctx = ""
+        adj_sp_low = sp_low
+        adj_sl_high = sl_high
+        if percentile is not None:
+            pct_high = self.rules["price_percentile_high"]
+            pct_low = self.rules["price_percentile_low"]
+            adj_amount = self.rules["stop_profit_adj_high_pos"]
+            adj_loss = self.rules["stop_loss_adj_low_pos"]
+            if percentile >= pct_high:
+                adj_sp_low = sp_low - adj_amount
+                pct_ctx = f" [价格分位数{percentile:.0f}%≥{pct_high}%，止盈门槛下调至{adj_sp_low*100:.0f}%]"
+            elif percentile <= pct_low:
+                adj_sl_high = sl_high - adj_loss
+                pct_ctx = f" [价格分位数{percentile:.0f}%≤{pct_low}%，止损容忍度放宽至{adj_sl_high*100:.0f}%]"
+
         if returns >= sp_high:
             signals.append({
                 "rule": "S-01", "name": "止盈信号（强）",
-                "detail": f"累计收益率 {returns*100:.1f}% 已超过强止盈线 {sp_high*100:.0f}%，建议赎回至目标仓位",
+                "detail": f"累计收益率 {returns*100:.1f}% 已超过强止盈线 {sp_high*100:.0f}%，建议赎回至目标仓位{pct_ctx}",
                 "action": "sell", "strength": "strong", "score": 40,
                 "suggested_action": self._build_redeem_suggestion(fund_id, "strong"),
             })
-        elif returns >= sp_low:
+        elif returns >= adj_sp_low:
+            strength = "medium"
+            score = 30
+            if percentile is not None and percentile >= pct_high:
+                strength = "strong"
+                score = 38
             signals.append({
-                "rule": "S-01", "name": "止盈信号（中）",
-                "detail": f"累计收益率 {returns*100:.1f}% 触及止盈区间 [{sp_low*100:.0f}%, {sp_high*100:.0f}%]，可考虑分批减仓",
-                "action": "sell", "strength": "medium", "score": 30,
+                "rule": "S-01", "name": f"止盈信号（{'强·高位调制' if strength == 'strong' else '中'}）",
+                "detail": f"累计收益率 {returns*100:.1f}% 触及止盈区间 [{adj_sp_low*100:.0f}%, {sp_high*100:.0f}%]，可考虑分批减仓{pct_ctx}",
+                "action": "sell", "strength": strength, "score": score,
                 "suggested_action": self._build_redeem_suggestion(fund_id, "medium"),
             })
 
-        if returns <= sl_high:
+        if returns <= adj_sl_high:
             signals.append({
                 "rule": "S-01", "name": "止损信号（强）",
-                "detail": f"累计收益率 {returns*100:.1f}% 已跌破止损线 {sl_high*100:.0f}%，建议立即止损赎回",
+                "detail": f"累计收益率 {returns*100:.1f}% 已跌破止损线 {adj_sl_high*100:.0f}%，建议立即止损赎回{pct_ctx}",
                 "action": "sell", "strength": "strong", "score": 40,
                 "suggested_action": self._build_redeem_suggestion(fund_id, "strong_stoploss"),
             })
         elif returns <= sl_low:
             signals.append({
                 "rule": "S-01", "name": "止损预警",
-                "detail": f"累计收益率 {returns*100:.1f}% 接近止损线 [{sl_low*100:.0f}%, {sl_high*100:.0f}%]，密切关注",
+                "detail": f"累计收益率 {returns*100:.1f}% 接近止损线 [{sl_low*100:.0f}%, {sl_high*100:.0f}%]，密切关注{pct_ctx}",
                 "action": "sell", "strength": "weak", "score": 15,
             })
         return signals
@@ -268,8 +413,9 @@ class SignalEngine:
                     })
         return signals
 
-    def generate_all_signals(self, nav_data, nav_history_data):
+    def generate_all_signals(self, nav_data, nav_history_data, monthly_nav_history=None):
         all_signals = []
+        percentile_details = {}
 
         for fund in self.funds:
             fund_id = fund["id"]
@@ -283,11 +429,25 @@ class SignalEngine:
             if not fund_nav_history or fund_nav_history[-1] != current_nav:
                 fund_nav_history = fund_nav_history + [current_nav]
 
+            # 计算价格分位数（优先使用月度5年历史）
+            monthly_data = monthly_nav_history.get(fund_id) if monthly_nav_history else None
+            percentile = self.calculate_price_percentile(fund_nav_history, monthly_data)
+            pct_detail = self.get_percentile_detail(fund_nav_history, monthly_data)
+            percentile_details[fund_id] = {
+                "fund_name": fund_name,
+                "percentile": pct_detail["percentile"],
+                "hist_high": pct_detail["high"],
+                "hist_low": pct_detail["low"],
+                "current_nav": pct_detail["current"],
+                "source": pct_detail["source"],
+            }
+
             fund_signals = []
-            fund_signals.extend(self.check_stop_profit_loss(fund_id, current_nav, cost_nav))
+            fund_signals.extend(self.check_stop_profit_loss(fund_id, current_nav, cost_nav, percentile))
             fund_signals.extend(self.detect_cross(fund_nav_history))
             fund_signals.extend(self.check_weight_deviation(fund_id))
             fund_signals.extend(self.check_drawdown(fund_id, fund_nav_history))
+            fund_signals.extend(self.check_price_position(fund_id, fund_nav_history, monthly_data))
 
             for sig in fund_signals:
                 sig["fund_id"] = fund_id
@@ -313,6 +473,7 @@ class SignalEngine:
             "buy_signals": buy_signals,
             "hold_signals": hold_signals,
             "summary": summary,
+            "percentile_details": percentile_details,
             "generated_at": datetime.now(CST).isoformat(),
         }
 

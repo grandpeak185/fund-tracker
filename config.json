@@ -89,6 +89,12 @@
     "drawdown_buy_high": 0.25,
     "volume_surge_ratio": 1.5,
     "circuit_breaker_drop": 0.15,
-    "circuit_breaker_days": 5
+    "circuit_breaker_days": 5,
+    "price_percentile_high": 85,
+    "price_percentile_extreme": 95,
+    "price_percentile_low": 20,
+    "price_percentile_extreme_low": 10,
+    "stop_profit_adj_high_pos": 0.05,
+    "stop_loss_adj_low_pos": 0.03
   }
 }

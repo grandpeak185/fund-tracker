@@ -234,6 +234,47 @@
       width: 8px; height: 8px; border-radius: 50%;
     }
 
+    /* 价格分位数 */
+    .percentile-section .section-desc {
+      font-size: 13px; color: #64748b; margin: 4px 0 16px;
+    }
+    .pct-item {
+      margin-bottom: 20px;
+    }
+    .pct-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px;
+    }
+    .pct-name {
+      font-size: 14px; font-weight: 600; color: #1e293b;
+    }
+    .pct-status {
+      font-size: 13px; font-weight: 600;
+    }
+    .pct-bar-container {
+      position: relative; width: 100%; height: 24px;
+      background: #f1f5f9; border-radius: 12px; overflow: visible;
+    }
+    .pct-bar {
+      height: 100%; border-radius: 12px;
+      transition: width 0.6s ease;
+      min-width: 4px;
+    }
+    .pct-threshold {
+      position: absolute; top: 0; bottom: 0;
+      width: 2px; background: #cbd5e1; opacity: 0.7;
+    }
+    .pct-labels {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 4px; font-size: 12px; color: #94a3b8;
+    }
+    .pct-value {
+      font-size: 14px;
+    }
+    .pct-detail {
+      font-size: 12px; color: #64748b; margin-top: 2px;
+    }
+
     /* 规则说明 */
     .rules-section h3 {
       font-size: 15px; margin: 16px 0 8px; color: #2c5282;
@@ -357,6 +398,12 @@
         font-size: 12px;
       }
 
+      /* 价格分位数 */
+      .pct-name { font-size: 13px; }
+      .pct-status { font-size: 12px; }
+      .pct-detail { font-size: 11px; }
+      .pct-bar-container { height: 20px; }
+
       /* 规则说明 */
       .rules-section h3 { font-size: 14px; }
       .rules-section li {
@@ -390,7 +437,7 @@
     <!-- 头部 -->
     <div class="header">
       <h1>Overseas Treasury</h1>
-      <div class="update-time">最后更新: 2026-08-09 21:55:14 CST</div>
+      <div class="update-time">最后更新: 2026-08-10 02:20:57 CST</div>
     </div>
 
     <!-- 第一板块：资产总额 -->
@@ -477,11 +524,75 @@
 
     <!-- 第三板块：净值趋势 -->
     <div class="card">
-      <h2>净值趋势 (2025年1月至今 · 月末净值)</h2>
+      <h2>净值趋势 (2021年1月至今 · 月末净值 · 5年回溯)</h2>
       <div class="trend-container">
         <canvas id="trendChart"></canvas>
         <div id="chartTooltip"></div>
       </div>
+    </div>
+
+    <!-- 价格分位数板块 -->
+    <div class="card percentile-section">
+      <h2>价格分位数 (5年历史回溯 · 2021年1月起)</h2>
+      <p class="section-desc">当前净值在5年历史区间中的相对位置。分位数越高，回调风险越大；越低则处于布局机会区。</p>
+      
+        <div class="pct-item">
+          <div class="pct-header">
+            <span class="pct-name">惠理高息股票基金</span>
+            <span class="pct-status" style="color:#dc2626">极端高位</span>
+          </div>
+          <div class="pct-bar-container">
+            <div class="pct-bar" style="width:99.6%;background:#dc2626"></div>
+            <div class="pct-threshold" style="left:10%"></div>
+            <div class="pct-threshold" style="left:20%"></div>
+            <div class="pct-threshold" style="left:85%"></div>
+            <div class="pct-threshold" style="left:95%"></div>
+          </div>
+          <div class="pct-labels">
+            <span>0%</span>
+            <span class="pct-value" style="color:#dc2626;font-weight:bold">99.6%</span>
+            <span>100%</span>
+          </div>
+          <div class="pct-detail">5年高: 30.28 | 5年低: 14.05 | 当前: 30.21</div>
+        </div>
+        <div class="pct-item">
+          <div class="pct-header">
+            <span class="pct-name">JPM亚太入息基金</span>
+            <span class="pct-status" style="color:#dc2626">极端高位</span>
+          </div>
+          <div class="pct-bar-container">
+            <div class="pct-bar" style="width:95.7%;background:#dc2626"></div>
+            <div class="pct-threshold" style="left:10%"></div>
+            <div class="pct-threshold" style="left:20%"></div>
+            <div class="pct-threshold" style="left:85%"></div>
+            <div class="pct-threshold" style="left:95%"></div>
+          </div>
+          <div class="pct-labels">
+            <span>0%</span>
+            <span class="pct-value" style="color:#dc2626;font-weight:bold">95.7%</span>
+            <span>100%</span>
+          </div>
+          <div class="pct-detail">5年高: 123.70 | 5年低: 88.08 | 当前: 122.18</div>
+        </div>
+        <div class="pct-item">
+          <div class="pct-header">
+            <span class="pct-name">东方汇理收益机遇基金</span>
+            <span class="pct-status" style="color:#dc2626">极端高位</span>
+          </div>
+          <div class="pct-bar-container">
+            <div class="pct-bar" style="width:100.0%;background:#dc2626"></div>
+            <div class="pct-threshold" style="left:10%"></div>
+            <div class="pct-threshold" style="left:20%"></div>
+            <div class="pct-threshold" style="left:85%"></div>
+            <div class="pct-threshold" style="left:95%"></div>
+          </div>
+          <div class="pct-labels">
+            <span>0%</span>
+            <span class="pct-value" style="color:#dc2626;font-weight:bold">100.0%</span>
+            <span>100%</span>
+          </div>
+          <div class="pct-detail">5年高: 84.15 | 5年低: 52.04 | 当前: 84.15</div>
+        </div>
     </div>
 
     <!-- 第四板块：规则说明 -->
@@ -489,10 +600,11 @@
       <h2>量化信号规则说明</h2>
       <h3>卖出规则</h3>
       <ul>
-        <li><code>S-01</code>止盈止损: 累计收益 ≥+15%触发止盈, ≥+25%强止盈; ≤-8%止损预警, ≤-12%强止损</li>
+        <li><code>S-01</code>止盈止损: 累计收益 ≥+15%触发止盈, ≥+25%强止盈; ≤-8%止损预警, ≤-12%强止损（价格分位数调制）</li>
         <li><code>S-02</code>趋势反转: MA5下穿MA20（死叉）</li>
         <li><code>S-04</code>仓位偏离: 当前权重超出目标权重+3%，触发再平衡减仓</li>
         <li><code>S-05</code>急跌熔断: 5日跌幅>15%，暂停自动操作，转人工复核</li>
+        <li><code>S-06</code>历史高位: 价格分位数 &gt;85% 高位预警，&gt;95% 极端高位强信号（5年回溯）</li>
       </ul>
       <h3>买入规则</h3>
       <ul>
@@ -500,6 +612,13 @@
         <li><code>B-03</code>回撤企稳: 从高点回撤15%-25%且近3日波动&lt;1%</li>
         <li><code>B-04</code>现金过多: 现金仓位&gt;30%，建议配置</li>
         <li><code>B-05</code>仓位不足: 当前权重低于目标权重-3%，触发再平衡加仓</li>
+        <li><code>B-06</code>历史低位: 价格分位数 &lt;20% 低位机会，&lt;10% 极端低位强信号（5年回溯）</li>
+      </ul>
+      <h3>价格分位数（5年历史回溯，2021年1月起）</h3>
+      <ul>
+        <li>分位数 = (当前净值 − 5年最低) / (5年最高 − 5年最低) × 100%</li>
+        <li>数据来源: Morningstar月度净值 API，覆盖2021-01至今约68个月度数据点</li>
+        <li>分位数越高，当前价格越接近历史高点，回调风险越大；反之则处于历史低位</li>
       </ul>
       <h3>信号强度</h3>
       <ul>
@@ -515,9 +634,9 @@
       
         <div class="signal-item sell">
           <span class="signal-tag sell">S-01</span>
-          <span style="color:#b45309;font-weight:700;">[中]</span>
-          <span class="signal-name">惠理高息股票基金 - 止盈信号（中）</span>
-          <p class="signal-detail">累计收益率 24.3% 触及止盈区间 [15%, 25%]，可考虑分批减仓</p>
+          <span style="color:#dc2626;font-weight:700;">[强]</span>
+          <span class="signal-name">惠理高息股票基金 - 止盈信号（强·高位调制）</span>
+          <p class="signal-detail">累计收益率 24.3% 触及止盈区间 [10%, 25%]，可考虑分批减仓 [价格分位数100%≥85%，止盈门槛下调至10%]</p>
           
     <div class="suggested-action">
       <span class="action-label">⚡ 建议操作</span>
@@ -533,6 +652,50 @@
     <div class="suggested-action">
       <span class="action-label">⚡ 建议操作</span>
       <span class="action-desc">再平衡: 赎回 惠理高息股票基金 约 $11,378，使权重回归 15%</span>
+    </div>
+        </div>
+        <div class="signal-item sell">
+          <span class="signal-tag sell">S-06</span>
+          <span style="color:#dc2626;font-weight:700;">[强]</span>
+          <span class="signal-name">惠理高息股票基金 - 历史极端高位（强）</span>
+          <p class="signal-detail">惠理高息股票基金 当前价格分位数 99.6%（高于95%极端线），处于历史极高位置，回调风险极大，建议立即减仓</p>
+          
+    <div class="suggested-action">
+      <span class="action-label">⚡ 建议操作</span>
+      <span class="action-desc">建议赎回 惠理高息股票基金 约 $11,378，将仓位从 18.5% 减至 15%</span>
+    </div>
+        </div>
+        <div class="signal-item sell">
+          <span class="signal-tag sell">S-06</span>
+          <span style="color:#dc2626;font-weight:700;">[强]</span>
+          <span class="signal-name">JPM亚太入息基金 - 历史极端高位（强）</span>
+          <p class="signal-detail">JPM亚太入息基金 当前价格分位数 95.7%（高于95%极端线），处于历史极高位置，回调风险极大，建议立即减仓</p>
+          
+    <div class="suggested-action">
+      <span class="action-label">⚡ 建议操作</span>
+      <span class="action-desc">建议赎回 JPM亚太入息基金 约 $9,475，将仓位从 27.9% 减至 25%</span>
+    </div>
+        </div>
+        <div class="signal-item sell">
+          <span class="signal-tag sell">S-01</span>
+          <span style="color:#dc2626;font-weight:700;">[强]</span>
+          <span class="signal-name">东方汇理收益机遇基金 - 止盈信号（强·高位调制）</span>
+          <p class="signal-detail">累计收益率 11.1% 触及止盈区间 [10%, 25%]，可考虑分批减仓 [价格分位数100%≥85%，止盈门槛下调至10%]</p>
+          
+    <div class="suggested-action">
+      <span class="action-label">⚡ 建议操作</span>
+      <span class="action-desc">建议分批赎回 东方汇理收益机遇基金 约 $-1,399，逐步向目标仓位 25% 靠拢</span>
+    </div>
+        </div>
+        <div class="signal-item sell">
+          <span class="signal-tag sell">S-06</span>
+          <span style="color:#dc2626;font-weight:700;">[强]</span>
+          <span class="signal-name">东方汇理收益机遇基金 - 历史极端高位（强）</span>
+          <p class="signal-detail">东方汇理收益机遇基金 当前价格分位数 100.0%（高于95%极端线），处于历史极高位置，回调风险极大，建议立即减仓</p>
+          
+    <div class="suggested-action">
+      <span class="action-label">⚡ 建议操作</span>
+      <span class="action-desc">建议赎回 东方汇理收益机遇基金 约 $-2,797，将仓位从 24.1% 减至 25%</span>
     </div>
         </div>
     </div>
@@ -553,8 +716,8 @@
 
   <script>
     // ---- 月度净值趋势折线图 (带tooltip) ----
-    const trendData = {"value_partners": {"label": "惠理高息股票", "color": "#1a56db", "data": [{"month": "2025-01", "nav": 9.34}, {"month": "2025-02", "nav": 9.39}, {"month": "2025-03", "nav": 9.34}, {"month": "2025-04", "nav": 9.53}, {"month": "2025-05", "nav": 10.01}, {"month": "2025-06", "nav": 10.54}, {"month": "2025-07", "nav": 10.89}, {"month": "2025-08", "nav": 10.97}, {"month": "2025-09", "nav": 11.19}, {"month": "2025-10", "nav": 11.62}, {"month": "2025-11", "nav": 11.52}, {"month": "2025-12", "nav": 11.66}, {"month": "2026-01", "nav": 12.43}, {"month": "2026-02", "nav": 13.05}, {"month": "2026-03", "nav": 11.63}, {"month": "2026-04", "nav": 12.98}, {"month": "2026-05", "nav": 13.33}, {"month": "2026-06", "nav": 12.66}, {"month": "2026-07", "nav": 12.53}]}, "jpm_asia_pacific": {"label": "JPM亚太入息", "color": "#059669", "data": [{"month": "2025-01", "nav": 102.12}, {"month": "2025-02", "nav": 102.79}, {"month": "2025-03", "nav": 102.08}, {"month": "2025-04", "nav": 102.24}, {"month": "2025-05", "nav": 105.16}, {"month": "2025-06", "nav": 108.31}, {"month": "2025-07", "nav": 108.97}, {"month": "2025-08", "nav": 110.4}, {"month": "2025-09", "nav": 113.64}, {"month": "2025-10", "nav": 115.77}, {"month": "2025-11", "nav": 114.53}, {"month": "2025-12", "nav": 115.71}, {"month": "2026-01", "nav": 119.44}, {"month": "2026-02", "nav": 122.56}, {"month": "2026-03", "nav": 114.33}, {"month": "2026-04", "nav": 120.76}, {"month": "2026-05", "nav": 123.7}, {"month": "2026-06", "nav": 122.41}, {"month": "2026-07", "nav": 121.76}]}, "amundi_income": {"label": "东方汇理收益机遇", "color": "#d97706", "data": [{"month": "2025-01", "nav": 66.08}, {"month": "2025-02", "nav": 67.27}, {"month": "2025-03", "nav": 68.12}, {"month": "2025-04", "nav": 68.16}, {"month": "2025-05", "nav": 70.93}, {"month": "2025-06", "nav": 73.25}, {"month": "2025-07", "nav": 73.99}, {"month": "2025-08", "nav": 75.12}, {"month": "2025-09", "nav": 76.12}, {"month": "2025-10", "nav": 76.2}, {"month": "2025-11", "nav": 77.01}, {"month": "2025-12", "nav": 78.26}, {"month": "2026-01", "nav": 80.05}, {"month": "2026-02", "nav": 81.39}, {"month": "2026-03", "nav": 78.96}, {"month": "2026-04", "nav": 81.12}, {"month": "2026-05", "nav": 81.31}, {"month": "2026-06", "nav": 80.86}, {"month": "2026-07", "nav": 83.42}]}};
-    const monthLabels = ["2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"];
+    const trendData = {"value_partners": {"label": "惠理高息股票", "color": "#1a56db", "data": [{"month": "2021-01-31", "nav": 24.69}, {"month": "2021-02-28", "nav": 24.4}, {"month": "2021-03-31", "nav": 23.36}, {"month": "2021-04-30", "nav": 24.17}, {"month": "2021-05-31", "nav": 23.89}, {"month": "2021-06-30", "nav": 25.13}, {"month": "2021-07-31", "nav": 25.02}, {"month": "2021-08-31", "nav": 26.05}, {"month": "2021-09-30", "nav": 24.8}, {"month": "2021-10-31", "nav": 26.38}, {"month": "2021-11-30", "nav": 25.18}, {"month": "2021-12-31", "nav": 24.8}, {"month": "2022-01-31", "nav": 21.9}, {"month": "2022-02-28", "nav": 21.26}, {"month": "2022-03-31", "nav": 21.27}, {"month": "2022-04-30", "nav": 18.37}, {"month": "2022-05-31", "nav": 17.71}, {"month": "2022-06-30", "nav": 15.94}, {"month": "2022-07-31", "nav": 17.43}, {"month": "2022-08-31", "nav": 16.17}, {"month": "2022-09-30", "nav": 14.05}, {"month": "2022-10-31", "nav": 14.56}, {"month": "2022-11-30", "nav": 15.47}, {"month": "2022-12-31", "nav": 14.48}, {"month": "2023-01-31", "nav": 15.87}, {"month": "2023-02-28", "nav": 15.59}, {"month": "2023-03-31", "nav": 16.2}, {"month": "2023-04-30", "nav": 15.74}, {"month": "2023-05-31", "nav": 16.83}, {"month": "2023-06-30", "nav": 17.64}, {"month": "2023-07-31", "nav": 18.15}, {"month": "2023-08-31", "nav": 17.49}, {"month": "2023-09-30", "nav": 16.52}, {"month": "2023-10-31", "nav": 15.69}, {"month": "2023-11-30", "nav": 17.81}, {"month": "2023-12-31", "nav": 18.86}, {"month": "2024-01-31", "nav": 19.65}, {"month": "2024-02-29", "nav": 20.74}, {"month": "2024-03-31", "nav": 21.02}, {"month": "2024-04-30", "nav": 20.01}, {"month": "2024-05-31", "nav": 20.63}, {"month": "2024-06-30", "nav": 21.51}, {"month": "2024-07-31", "nav": 20.82}, {"month": "2024-08-31", "nav": 21.6}, {"month": "2024-09-30", "nav": 22.14}, {"month": "2024-10-31", "nav": 22.2}, {"month": "2024-11-30", "nav": 23.56}, {"month": "2024-12-31", "nav": 22.94}, {"month": "2025-01-31", "nav": 23.63}, {"month": "2025-02-28", "nav": 23.0}, {"month": "2025-03-31", "nav": 20.81}, {"month": "2025-04-30", "nav": 21.29}, {"month": "2025-05-31", "nav": 23.01}, {"month": "2025-06-30", "nav": 24.17}, {"month": "2025-07-31", "nav": 24.61}, {"month": "2025-08-31", "nav": 24.6}, {"month": "2025-09-30", "nav": 25.46}, {"month": "2025-10-31", "nav": 26.84}, {"month": "2025-11-30", "nav": 26.08}, {"month": "2025-12-31", "nav": 26.02}, {"month": "2026-01-31", "nav": 26.0}, {"month": "2026-02-28", "nav": 25.17}, {"month": "2026-03-31", "nav": 23.52}, {"month": "2026-04-30", "nav": 27.2}, {"month": "2026-05-31", "nav": 30.28}, {"month": "2026-06-30", "nav": 30.16}, {"month": "2026-07-31", "nav": 28.81}, {"month": "2026-08-06", "nav": 30.21}]}, "jpm_asia_pacific": {"label": "JPM亚太入息", "color": "#059669", "data": [{"month": "2021-01-31", "nav": 117.89}, {"month": "2021-02-28", "nav": 119.4}, {"month": "2021-03-31", "nav": 119.28}, {"month": "2021-04-30", "nav": 121.03}, {"month": "2021-05-31", "nav": 122.57}, {"month": "2021-06-30", "nav": 120.61}, {"month": "2021-07-31", "nav": 118.21}, {"month": "2021-08-31", "nav": 119.62}, {"month": "2021-09-30", "nav": 116.11}, {"month": "2021-10-31", "nav": 115.71}, {"month": "2021-11-30", "nav": 113.95}, {"month": "2021-12-31", "nav": 116.24}, {"month": "2022-01-31", "nav": 114.55}, {"month": "2022-02-28", "nav": 113.17}, {"month": "2022-03-31", "nav": 111.13}, {"month": "2022-04-30", "nav": 107.15}, {"month": "2022-05-31", "nav": 106.71}, {"month": "2022-06-30", "nav": 101.8}, {"month": "2022-07-31", "nav": 100.95}, {"month": "2022-08-31", "nav": 100.0}, {"month": "2022-09-30", "nav": 92.63}, {"month": "2022-10-31", "nav": 88.08}, {"month": "2022-11-30", "nav": 96.62}, {"month": "2022-12-31", "nav": 97.26}, {"month": "2023-01-31", "nav": 102.19}, {"month": "2023-02-28", "nav": 98.43}, {"month": "2023-03-31", "nav": 99.07}, {"month": "2023-04-30", "nav": 99.02}, {"month": "2023-05-31", "nav": 97.02}, {"month": "2023-06-30", "nav": 98.35}, {"month": "2023-07-31", "nav": 100.01}, {"month": "2023-08-31", "nav": 96.13}, {"month": "2023-09-30", "nav": 94.38}, {"month": "2023-10-31", "nav": 92.16}, {"month": "2023-11-30", "nav": 96.03}, {"month": "2023-12-31", "nav": 98.97}, {"month": "2024-01-31", "nav": 97.68}, {"month": "2024-02-29", "nav": 98.72}, {"month": "2024-03-31", "nav": 99.69}, {"month": "2024-04-30", "nav": 98.84}, {"month": "2024-05-31", "nav": 99.72}, {"month": "2024-06-30", "nav": 101.75}, {"month": "2024-07-31", "nav": 101.92}, {"month": "2024-08-31", "nav": 103.58}, {"month": "2024-09-30", "nav": 107.07}, {"month": "2024-10-31", "nav": 103.33}, {"month": "2024-11-30", "nav": 102.37}, {"month": "2024-12-31", "nav": 101.59}, {"month": "2025-01-31", "nav": 102.12}, {"month": "2025-02-28", "nav": 102.79}, {"month": "2025-03-31", "nav": 102.08}, {"month": "2025-04-30", "nav": 102.24}, {"month": "2025-05-31", "nav": 105.16}, {"month": "2025-06-30", "nav": 108.31}, {"month": "2025-07-31", "nav": 108.97}, {"month": "2025-08-31", "nav": 110.4}, {"month": "2025-09-30", "nav": 113.64}, {"month": "2025-10-31", "nav": 115.77}, {"month": "2025-11-30", "nav": 114.53}, {"month": "2025-12-31", "nav": 115.71}, {"month": "2026-01-31", "nav": 119.44}, {"month": "2026-02-28", "nav": 122.56}, {"month": "2026-03-31", "nav": 114.33}, {"month": "2026-04-30", "nav": 120.76}, {"month": "2026-05-31", "nav": 123.7}, {"month": "2026-06-30", "nav": 122.41}, {"month": "2026-07-31", "nav": 121.76}, {"month": "2026-08-07", "nav": 122.18}]}, "amundi_income": {"label": "东方汇理收益机遇", "color": "#d97706", "data": [{"month": "2021-01-31", "nav": 52.78}, {"month": "2021-02-28", "nav": 54.07}, {"month": "2021-03-31", "nav": 56.29}, {"month": "2021-04-30", "nav": 57.11}, {"month": "2021-05-31", "nav": 58.32}, {"month": "2021-06-30", "nav": 57.86}, {"month": "2021-07-31", "nav": 56.92}, {"month": "2021-08-31", "nav": 57.3}, {"month": "2021-09-30", "nav": 57.71}, {"month": "2021-10-31", "nav": 57.56}, {"month": "2021-11-30", "nav": 56.13}, {"month": "2021-12-31", "nav": 57.79}, {"month": "2022-01-31", "nav": 58.82}, {"month": "2022-02-28", "nav": 57.34}, {"month": "2022-03-31", "nav": 58.19}, {"month": "2022-04-30", "nav": 56.56}, {"month": "2022-05-31", "nav": 57.75}, {"month": "2022-06-30", "nav": 53.62}, {"month": "2022-07-31", "nav": 55.45}, {"month": "2022-08-31", "nav": 55.5}, {"month": "2022-09-30", "nav": 52.04}, {"month": "2022-10-31", "nav": 54.58}, {"month": "2022-11-30", "nav": 57.2}, {"month": "2022-12-31", "nav": 57.04}, {"month": "2023-01-31", "nav": 59.75}, {"month": "2023-02-28", "nav": 58.96}, {"month": "2023-03-31", "nav": 57.73}, {"month": "2023-04-30", "nav": 58.37}, {"month": "2023-05-31", "nav": 57.19}, {"month": "2023-06-30", "nav": 58.42}, {"month": "2023-07-31", "nav": 60.46}, {"month": "2023-08-31", "nav": 59.72}, {"month": "2023-09-30", "nav": 59.65}, {"month": "2023-10-31", "nav": 58.57}, {"month": "2023-11-30", "nav": 60.23}, {"month": "2023-12-31", "nav": 61.7}, {"month": "2024-01-31", "nav": 61.79}, {"month": "2024-02-29", "nav": 62.01}, {"month": "2024-03-31", "nav": 63.62}, {"month": "2024-04-30", "nav": 63.24}, {"month": "2024-05-31", "nav": 64.11}, {"month": "2024-06-30", "nav": 63.35}, {"month": "2024-07-31", "nav": 65.73}, {"month": "2024-08-31", "nav": 66.76}, {"month": "2024-09-30", "nav": 67.1}, {"month": "2024-10-31", "nav": 65.98}, {"month": "2024-11-30", "nav": 65.97}, {"month": "2024-12-31", "nav": 64.35}, {"month": "2025-01-31", "nav": 66.08}, {"month": "2025-02-28", "nav": 67.27}, {"month": "2025-03-31", "nav": 68.12}, {"month": "2025-04-30", "nav": 68.16}, {"month": "2025-05-31", "nav": 70.93}, {"month": "2025-06-30", "nav": 73.44}, {"month": "2025-07-31", "nav": 73.52}, {"month": "2025-08-31", "nav": 75.12}, {"month": "2025-09-30", "nav": 76.12}, {"month": "2025-10-31", "nav": 76.2}, {"month": "2025-11-30", "nav": 77.01}, {"month": "2025-12-31", "nav": 78.26}, {"month": "2026-01-31", "nav": 80.05}, {"month": "2026-02-28", "nav": 81.39}, {"month": "2026-03-31", "nav": 78.96}, {"month": "2026-04-30", "nav": 81.12}, {"month": "2026-05-31", "nav": 81.31}, {"month": "2026-06-30", "nav": 80.51}, {"month": "2026-07-31", "nav": 83.42}, {"month": "2026-08-07", "nav": 84.15}]}};
+    const monthLabels = ["2021-01-31", "2021-02-28", "2021-03-31", "2021-04-30", "2021-05-31", "2021-06-30", "2021-07-31", "2021-08-31", "2021-09-30", "2021-10-31", "2021-11-30", "2021-12-31", "2022-01-31", "2022-02-28", "2022-03-31", "2022-04-30", "2022-05-31", "2022-06-30", "2022-07-31", "2022-08-31", "2022-09-30", "2022-10-31", "2022-11-30", "2022-12-31", "2023-01-31", "2023-02-28", "2023-03-31", "2023-04-30", "2023-05-31", "2023-06-30", "2023-07-31", "2023-08-31", "2023-09-30", "2023-10-31", "2023-11-30", "2023-12-31", "2024-01-31", "2024-02-29", "2024-03-31", "2024-04-30", "2024-05-31", "2024-06-30", "2024-07-31", "2024-08-31", "2024-09-30", "2024-10-31", "2024-11-30", "2024-12-31", "2025-01-31", "2025-02-28", "2025-03-31", "2025-04-30", "2025-05-31", "2025-06-30", "2025-07-31", "2025-08-31", "2025-09-30", "2025-10-31", "2025-11-30", "2025-12-31", "2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30", "2026-05-31", "2026-06-30", "2026-07-31", "2026-08-06"];
 
     const canvas = document.getElementById('trendChart');
     const ctx = canvas.getContext('2d');
