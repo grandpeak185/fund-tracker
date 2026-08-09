@@ -368,7 +368,7 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
 
     <!-- 第一板块：资产总额 -->
     <div class="card">
-      <h2><span class="section-num">1</span>资产总额</h2>
+      <h2>资产总额</h2>
       <div class="total-assets-box">
         <span class="label">资产总额</span>
         <span class="value">${total_assets:,.0f}</span>
@@ -392,7 +392,7 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
 
     <!-- 第二板块：投资明细 -->
     <div class="card">
-      <h2><span class="section-num">2</span>投资明细</h2>
+      <h2>投资明细</h2>
       <div class="table-wrapper">
         <table>
           <thead>
@@ -414,7 +414,7 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
 
     <!-- 第三板块：净值趋势 -->
     <div class="card">
-      <h2><span class="section-num">3</span>净值趋势 (2025年1月至今 · 月末净值)</h2>
+      <h2>净值趋势 (2025年1月至今 · 月末净值)</h2>
       <div class="trend-container">
         <canvas id="trendChart"></canvas>
         <div id="chartTooltip"></div>
@@ -423,7 +423,7 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
 
     <!-- 第四板块：规则说明 -->
     <div class="card rules-section">
-      <h2><span class="section-num">4</span>量化信号规则说明</h2>
+      <h2>量化信号规则说明</h2>
       <h3>卖出规则</h3>
       <ul>
         <li><code>S-01</code>止盈止损: 累计收益 ≥+15%触发止盈, ≥+25%强止盈; ≤-8%止损预警, ≤-12%强止损</li>
@@ -448,13 +448,13 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
 
     <!-- 第五板块：赎回/卖出信号 -->
     <div class="card signal-card sell">
-      <h2><span class="section-num">5</span><span class="icon">🔴</span>赎回/卖出信号</h2>
+      <h2><span class="icon">🔴</span>赎回/卖出信号</h2>
       {sell_section if sell_section else '<div class="no-signal">暂无卖出信号触发</div>'}
     </div>
 
     <!-- 第六板块：申购/买入信号 -->
     <div class="card signal-card buy">
-      <h2><span class="section-num">6</span><span class="icon">🟢</span>申购/买入信号</h2>
+      <h2><span class="icon">🟢</span>申购/买入信号</h2>
       {buy_section if buy_section else '<div class="no-signal">暂无买入信号触发</div>'}
     </div>
 
@@ -586,14 +586,7 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
           }});
         }});
 
-        // 最后一个点标注
-        const lastIdx = vals.length - 1;
-        const lastX = padL + xStep * lastIdx;
-        const lastY = padT + chartH * (1 - (vals[lastIdx] - yMin) / yRange);
-        ctx.fillStyle = f.color;
-        ctx.font = 'bold 12px -apple-system, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('$' + vals[lastIdx].toFixed(2), lastX + 8, lastY + 4);
+        // 最后一个点不再标注金额
       }});
 
       // 图例
@@ -628,13 +621,10 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
       }});
 
       if (closest) {{
-        // 找同月份所有基金的数据
-        const sameMonth = pointCoords.filter(p => p.month === closest.month);
+        // 只显示鼠标所在折线的单只基金净值
         let html = '<div class="tt-date">' + closest.month + '</div>';
-        sameMonth.forEach(p => {{
-          html += '<div class="tt-line"><span class="tt-dot" style="background:' + p.color + '"></span>' +
-                  p.label + ': $' + p.nav.toFixed(2) + '</div>';
-        }});
+        html += '<div class="tt-line"><span class="tt-dot" style="background:' + closest.color + '"></span>' +
+                closest.label + ': $' + closest.nav.toFixed(2) + '</div>';
         tooltip.innerHTML = html;
         tooltip.style.display = 'block';
         tooltip.style.left = (closest.x + 15) + 'px';
