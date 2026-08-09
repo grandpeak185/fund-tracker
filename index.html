@@ -29,12 +29,6 @@
       font-weight: 700;
       letter-spacing: 1px;
     }
-    .header .sub-title {
-      color: #90cdf4;
-      font-size: 14px;
-      margin-top: 6px;
-      letter-spacing: 0.5px;
-    }
     .header .update-time {
       color: #a0aec0;
       font-size: 13px;
@@ -57,6 +51,72 @@
       padding-bottom: 10px;
       border-bottom: 2px solid #e2e8f0;
       font-weight: 700;
+    }
+
+    /* 板块编号 */
+    .section-num {
+      display: inline-block;
+      width: 28px; height: 28px;
+      line-height: 28px;
+      text-align: center;
+      background: #1a365d;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 700;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    /* 资产总额 */
+    .total-assets-box {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .total-assets-box .label {
+      font-size: 16px;
+      color: #475569;
+      font-weight: 600;
+    }
+    .total-assets-box .value {
+      font-size: 42px;
+      font-weight: 800;
+      color: #1a365d;
+      font-variant-numeric: tabular-nums;
+    }
+    .total-assets-box .currency {
+      font-size: 18px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .total-breakdown {
+      margin-top: 20px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .breakdown-item {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .breakdown-item .b-label {
+      font-size: 12px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .breakdown-item .b-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+      font-variant-numeric: tabular-nums;
+      margin-top: 4px;
     }
 
     /* 信号区块 */
@@ -129,7 +189,33 @@
     }
     #trendChart {
       width: 100%;
-      height: 380px;
+      height: 400px;
+      display: block;
+    }
+    #chartTooltip {
+      position: absolute;
+      display: none;
+      background: rgba(30,41,59,0.95);
+      color: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10;
+    }
+    #chartTooltip .tt-date {
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    #chartTooltip .tt-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #chartTooltip .tt-dot {
+      width: 8px; height: 8px; border-radius: 50%;
     }
 
     /* 规则说明 */
@@ -142,7 +228,7 @@
       display: flex; align-items: flex-start; gap: 8px;
     }
     .rules-section li::before {
-      content: "▪"; color: #2c5282; font-weight: bold;
+      content: "\25AA"; color: #2c5282; font-weight: bold;
     }
     .rules-section code {
       background: #e0e7ff; padding: 2px 8px; border-radius: 4px;
@@ -150,6 +236,16 @@
       min-width: 44px; display: inline-block; text-align: center;
       margin-right: 4px;
     }
+
+    /* 免责条款 */
+    .disclaimer {
+      text-align: center;
+      padding: 16px 24px;
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+    .disclaimer p { margin: 4px 0; }
   </style>
 </head>
 <body>
@@ -158,47 +254,36 @@
     <!-- 头部 -->
     <div class="header">
       <h1>Overseas Treasury</h1>
-      <div class="sub-title">境外基金投资组合监控</div>
-      <div class="update-time">最后更新: 2026-08-09 19:30:44 CST</div>
+      <div class="update-time">最后更新: 2026-08-09 20:55:17 CST</div>
     </div>
 
-    <!-- 卖出信号 -->
-    <div class="card signal-card sell">
-      <h2><span class="icon">🔴</span>赎回/卖出信号</h2>
-      
-        <div class="signal-item sell">
-          <span class="signal-tag sell">S-01</span>
-          <span style="color:#b45309;font-weight:700;">[中]</span>
-          <span class="signal-name">惠理高息股票基金 - 止盈信号（中）</span>
-          <p class="signal-detail">累计收益率 24.3% 触及止盈区间 [15%, 25%]，可考虑分批减仓</p>
-          
-    <div class="suggested-action">
-      <span class="action-label">⚡ 建议操作</span>
-      <span class="action-desc">建议分批赎回 惠理高息股票基金 约 $5,655，逐步向目标仓位 15% 靠拢</span>
-    </div>
-        </div>
-        <div class="signal-item sell">
-          <span class="signal-tag sell">S-04</span>
-          <span style="color:#b45309;font-weight:700;">[中]</span>
-          <span class="signal-name">惠理高息股票基金 - 仓位超配</span>
-          <p class="signal-detail">惠理高息股票基金 当前权重 18.5% 超出目标 15% 达 3.5%，建议再平衡减仓约 $11,310</p>
-          
-    <div class="suggested-action">
-      <span class="action-label">⚡ 建议操作</span>
-      <span class="action-desc">再平衡: 赎回 惠理高息股票基金 约 $11,310，使权重回归 15%</span>
-    </div>
-        </div>
-    </div>
-
-    <!-- 买入信号 -->
-    <div class="card signal-card buy">
-      <h2><span class="icon">🟢</span>申购/买入信号</h2>
-      <div class="no-signal">暂无买入信号触发</div>
-    </div>
-
-    <!-- 投资明细表（全宽） -->
+    <!-- 第一板块：资产总额 -->
     <div class="card">
-      <h2>投资明细</h2>
+      <h2><span class="section-num">1</span>资产总额</h2>
+      <div class="total-assets-box">
+        <span class="label">资产总额</span>
+        <span class="value">$322,720</span>
+        <span class="currency">USD</span>
+      </div>
+      <div class="total-breakdown">
+        <div class="breakdown-item">
+          <div class="b-label">基金市值合计</div>
+          <div class="b-value">$227,824</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-label">现金和存款</div>
+          <div class="b-value">$94,896</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-label">基金数量</div>
+          <div class="b-value">3</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第二板块：投资明细 -->
+    <div class="card">
+      <h2><span class="section-num">2</span>投资明细</h2>
       <div class="table-wrapper">
         <table>
           <thead>
@@ -217,7 +302,7 @@
           <td><strong>惠理高息股票基金</strong><br><span class="sub">A2 MDis USD | ISIN: HK0000288784</span></td>
           <td class="mono">2026-08-06</td>
           <td class="mono">$12.58</td>
-          <td class="mono">$59,782</td>
+          <td class="mono">$59,786</td>
           <td class="mono pos">+24.31%</td>
           <td><span class="badge">18.5%</span></td>
         </tr>
@@ -225,42 +310,43 @@
           <td><strong>JPM亚太入息基金</strong><br><span class="sub">A (mth) USD | ISIN: LU0784639295</span></td>
           <td class="mono">2026-08-05</td>
           <td class="mono">$122.87</td>
-          <td class="mono">$90,157</td>
+          <td class="mono">$90,155</td>
           <td class="mono pos">+9.80%</td>
           <td><span class="badge">27.9%</span></td>
         </tr>
         <tr>
           <td><strong>东方汇理收益机遇基金</strong><br><span class="sub">A2 USD (C) Acc | ISIN: LU1883839398</span></td>
-          <td class="mono">06.08.2026</td>
+          <td class="mono">2026-08-06</td>
           <td class="mono">$83.72</td>
-          <td class="mono">$77,878</td>
+          <td class="mono">$77,883</td>
           <td class="mono pos">+11.14%</td>
           <td><span class="badge">24.1%</span></td>
         </tr>
         <tr class="cash-row">
-          <td><strong>现金</strong></td>
+          <td><strong>现金和存款</strong></td>
           <td>-</td>
           <td>-</td>
-          <td class="mono">$95,327</td>
+          <td class="mono">$94,896</td>
           <td>-</td>
-          <td><span class="badge">29.5%</span></td>
+          <td><span class="badge">29.4%</span></td>
         </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- 净值趋势（月度折线图） -->
+    <!-- 第三板块：净值趋势 -->
     <div class="card">
-      <h2>净值趋势 (2025年1月至今 · 月末净值)</h2>
+      <h2><span class="section-num">3</span>净值趋势 (2025年1月至今 · 月末净值)</h2>
       <div class="trend-container">
         <canvas id="trendChart"></canvas>
+        <div id="chartTooltip"></div>
       </div>
     </div>
 
-    <!-- 量化规则说明 -->
+    <!-- 第四板块：规则说明 -->
     <div class="card rules-section">
-      <h2>量化信号规则说明</h2>
+      <h2><span class="section-num">4</span>量化信号规则说明</h2>
       <h3>卖出规则</h3>
       <ul>
         <li><code>S-01</code>止盈止损: 累计收益 ≥+15%触发止盈, ≥+25%强止盈; ≤-8%止损预警, ≤-12%强止损</li>
@@ -283,30 +369,73 @@
       </ul>
     </div>
 
+    <!-- 第五板块：赎回/卖出信号 -->
+    <div class="card signal-card sell">
+      <h2><span class="section-num">5</span><span class="icon">🔴</span>赎回/卖出信号</h2>
+      
+        <div class="signal-item sell">
+          <span class="signal-tag sell">S-01</span>
+          <span style="color:#b45309;font-weight:700;">[中]</span>
+          <span class="signal-name">惠理高息股票基金 - 止盈信号（中）</span>
+          <p class="signal-detail">累计收益率 24.3% 触及止盈区间 [15%, 25%]，可考虑分批减仓</p>
+          
+    <div class="suggested-action">
+      <span class="action-label">⚡ 建议操作</span>
+      <span class="action-desc">建议分批赎回 惠理高息股票基金 约 $5,689，逐步向目标仓位 15% 靠拢</span>
+    </div>
+        </div>
+        <div class="signal-item sell">
+          <span class="signal-tag sell">S-04</span>
+          <span style="color:#b45309;font-weight:700;">[中]</span>
+          <span class="signal-name">惠理高息股票基金 - 仓位超配</span>
+          <p class="signal-detail">惠理高息股票基金 当前权重 18.5% 超出目标 15% 达 3.5%，建议再平衡减仓约 $11,378</p>
+          
+    <div class="suggested-action">
+      <span class="action-label">⚡ 建议操作</span>
+      <span class="action-desc">再平衡: 赎回 惠理高息股票基金 约 $11,378，使权重回归 15%</span>
+    </div>
+        </div>
+    </div>
+
+    <!-- 第六板块：申购/买入信号 -->
+    <div class="card signal-card buy">
+      <h2><span class="section-num">6</span><span class="icon">🟢</span>申购/买入信号</h2>
+      <div class="no-signal">暂无买入信号触发</div>
+    </div>
+
+    <!-- 免责条款 -->
+    <div class="disclaimer">
+      <p>本页面由量化规则自动生成，所有信号和数据仅供参考，不构成任何投资建议。</p>
+      <p>投资有风险，过往业绩不代表未来表现，请根据自身风险承受能力独立决策。</p>
+    </div>
+
   </div>
 
   <script>
-    // ---- 月度净值趋势折线图 ----
+    // ---- 月度净值趋势折线图 (带tooltip) ----
     const trendData = {"value_partners": {"label": "惠理高息股票", "color": "#1a56db", "data": [{"month": "2025-01", "nav": 9.34}, {"month": "2025-02", "nav": 9.39}, {"month": "2025-03", "nav": 9.34}, {"month": "2025-04", "nav": 9.53}, {"month": "2025-05", "nav": 10.01}, {"month": "2025-06", "nav": 10.54}, {"month": "2025-07", "nav": 10.89}, {"month": "2025-08", "nav": 10.97}, {"month": "2025-09", "nav": 11.19}, {"month": "2025-10", "nav": 11.62}, {"month": "2025-11", "nav": 11.52}, {"month": "2025-12", "nav": 11.66}, {"month": "2026-01", "nav": 12.43}, {"month": "2026-02", "nav": 13.05}, {"month": "2026-03", "nav": 11.63}, {"month": "2026-04", "nav": 12.98}, {"month": "2026-05", "nav": 13.33}, {"month": "2026-06", "nav": 12.66}, {"month": "2026-07", "nav": 12.53}]}, "jpm_asia_pacific": {"label": "JPM亚太入息", "color": "#059669", "data": [{"month": "2025-01", "nav": 102.12}, {"month": "2025-02", "nav": 102.79}, {"month": "2025-03", "nav": 102.08}, {"month": "2025-04", "nav": 102.24}, {"month": "2025-05", "nav": 105.16}, {"month": "2025-06", "nav": 108.31}, {"month": "2025-07", "nav": 108.97}, {"month": "2025-08", "nav": 110.4}, {"month": "2025-09", "nav": 113.64}, {"month": "2025-10", "nav": 115.77}, {"month": "2025-11", "nav": 114.53}, {"month": "2025-12", "nav": 115.71}, {"month": "2026-01", "nav": 119.44}, {"month": "2026-02", "nav": 122.56}, {"month": "2026-03", "nav": 114.33}, {"month": "2026-04", "nav": 120.76}, {"month": "2026-05", "nav": 123.7}, {"month": "2026-06", "nav": 122.41}, {"month": "2026-07", "nav": 121.76}]}, "amundi_income": {"label": "东方汇理收益机遇", "color": "#d97706", "data": [{"month": "2025-01", "nav": 66.08}, {"month": "2025-02", "nav": 67.27}, {"month": "2025-03", "nav": 68.12}, {"month": "2025-04", "nav": 68.16}, {"month": "2025-05", "nav": 70.93}, {"month": "2025-06", "nav": 73.25}, {"month": "2025-07", "nav": 73.99}, {"month": "2025-08", "nav": 75.12}, {"month": "2025-09", "nav": 76.12}, {"month": "2025-10", "nav": 76.2}, {"month": "2025-11", "nav": 77.01}, {"month": "2025-12", "nav": 78.26}, {"month": "2026-01", "nav": 80.05}, {"month": "2026-02", "nav": 81.39}, {"month": "2026-03", "nav": 78.96}, {"month": "2026-04", "nav": 81.12}, {"month": "2026-05", "nav": 81.31}, {"month": "2026-06", "nav": 80.86}, {"month": "2026-07", "nav": 83.42}]}};
     const monthLabels = ["2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"];
 
     const canvas = document.getElementById('trendChart');
     const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('chartTooltip');
+
+    // 存储绘制坐标用于tooltip
+    let pointCoords = []; // { x, y, month, nav, fid, label, color }
 
     function drawChart() {
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * dpr;
-      canvas.height = 380 * dpr;
+      canvas.height = 400 * dpr;
       ctx.scale(dpr, dpr);
 
       const W = rect.width;
-      const H = 380;
+      const H = 400;
       const padL = 70, padR = 30, padT = 50, padB = 50;
       const chartW = W - padL - padR;
       const chartH = H - padT - padB;
 
-      // 收集所有NAV值
       let allVals = [];
       Object.values(trendData).forEach(f => {
         f.data.forEach(d => allVals.push(d.nav));
@@ -323,10 +452,11 @@
       const n = monthLabels.length;
       const xStep = n > 1 ? chartW / (n - 1) : 0;
 
-      // 清空
+      pointCoords = [];
+
       ctx.clearRect(0, 0, W, H);
 
-      // 网格线 (水平)
+      // 网格线
       ctx.strokeStyle = '#e2e8f0';
       ctx.lineWidth = 1;
       ctx.font = '11px -apple-system, sans-serif';
@@ -342,14 +472,12 @@
         ctx.fillText(val.toFixed(2), padL - 8, y + 4);
       }
 
-      // X轴标签 (每隔适当数量显示)
+      // X轴标签
       ctx.textAlign = 'center';
       const labelStep = Math.ceil(n / 12);
       for (let i = 0; i < n; i += labelStep) {
         const x = padL + xStep * i;
-        const label = monthLabels[i];
-        const shortLabel = label.substring(2); // YY-MM -> -MM
-        ctx.fillText(shortLabel, x, H - padB + 18);
+        ctx.fillText(monthLabels[i].substring(5), x, H - padB + 18);
       }
 
       // Y轴标题
@@ -367,7 +495,6 @@
         const vals = f.data.map(d => d.nav);
         if (vals.length < 1) return;
 
-        // 线条
         ctx.strokeStyle = f.color;
         ctx.lineWidth = 2.5;
         ctx.lineJoin = 'round';
@@ -381,21 +508,30 @@
         });
         ctx.stroke();
 
-        // 数据点
+        // 数据点 + 存储坐标
         vals.forEach((v, i) => {
           const x = padL + xStep * i;
           const y = padT + chartH * (1 - (v - yMin) / yRange);
           ctx.fillStyle = f.color;
           ctx.beginPath();
-          ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = '#fff';
           ctx.beginPath();
-          ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
           ctx.fill();
+
+          pointCoords.push({
+            x: x, y: y,
+            month: f.data[i].month,
+            nav: v,
+            fid: fid,
+            label: f.label,
+            color: f.color
+          });
         });
 
-        // 最后一个点的数值标注
+        // 最后一个点标注
         const lastIdx = vals.length - 1;
         const lastX = padL + xStep * lastIdx;
         const lastY = padT + chartH * (1 - (vals[lastIdx] - yMin) / yRange);
@@ -418,6 +554,44 @@
         legendX += ctx.measureText(f.label).width + 50;
       });
     }
+
+    // Tooltip 交互
+    canvas.addEventListener('mousemove', function(e) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      // 找最近的点
+      let closest = null;
+      let minDist = 20;
+      pointCoords.forEach(p => {
+        const dist = Math.sqrt((p.x - mx) ** 2 + (p.y - my) ** 2);
+        if (dist < minDist) {
+          minDist = dist;
+          closest = p;
+        }
+      });
+
+      if (closest) {
+        // 找同月份所有基金的数据
+        const sameMonth = pointCoords.filter(p => p.month === closest.month);
+        let html = '<div class="tt-date">' + closest.month + '</div>';
+        sameMonth.forEach(p => {
+          html += '<div class="tt-line"><span class="tt-dot" style="background:' + p.color + '"></span>' +
+                  p.label + ': $' + p.nav.toFixed(2) + '</div>';
+        });
+        tooltip.innerHTML = html;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (closest.x + 15) + 'px';
+        tooltip.style.top = (closest.y - 10) + 'px';
+      } else {
+        tooltip.style.display = 'none';
+      }
+    });
+
+    canvas.addEventListener('mouseleave', function() {
+      tooltip.style.display = 'none';
+    });
 
     drawChart();
     window.addEventListener('resize', drawChart);

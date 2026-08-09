@@ -1,23 +1,43 @@
 #!/usr/bin/env python3
 """
 HTML报告生成器 - Overseas Treasury
-浅色金融风格，净值趋势月度折线图，投资明细全宽表格
+浅色金融风格，6大板块布局，动态市值与权重，净值趋势tooltip
 """
 
 import json
+import re
 from datetime import datetime, timezone, timedelta
 
 CST = timezone(timedelta(hours=8))
 
 
-def generate_html(config, nav_data, signal_result, monthly_nav_history):
+def normalize_date(date_str):
+    """将各种日期格式统一为 YYYY-MM-DD"""
+    if not date_str or date_str == "-":
+        return "-"
+    # DD.MM.YYYY -> YYYY-MM-DD
+    m = re.match(r'(\d{2})\.(\d{2})\.(\d{4})', date_str)
+    if m:
+        return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+    # YYYY-MM-DD (already correct)
+    m = re.match(r'(\d{4})-(\d{2})-(\d{2})', date_str)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+    return date_str
+
+
+def generate_html(config, nav_data, signal_result, monthly_nav_history, portfolio_data):
     """生成完整的HTML页面"""
 
-    total_value = config["portfolio"]["total_value_usd"]
     funds = config["funds"]
     cash = config["cash"]
     all_signals = signal_result["signals"]
     now_str = datetime.now(CST).strftime("%Y-%m-%d %H:%M:%S CST")
+
+    total_assets = portfolio_data["total_assets"]
+    fund_market_values = portfolio_data["fund_market_values"]
+    dynamic_weights = portfolio_data["dynamic_weights"]
+    cash_value = portfolio_data["cash_value"]
 
     # ---- 投资明细表行 ----
     fund_rows = []
@@ -27,34 +47,37 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
         current_nav = nav_info["nav"]
         cost_nav = fund["cost_nav"]
         returns = ((current_nav - cost_nav) / cost_nav) * 100 if cost_nav > 0 else 0
-        market_value = total_value * fund["current_weight"]
+        market_value = fund_market_values[fid]
+        weight = dynamic_weights[fid]
 
         returns_class = "pos" if returns >= 0 else "neg"
+        nav_date = normalize_date(nav_info['date'])
 
         fund_rows.append(f"""
         <tr>
           <td><strong>{fund['name_cn']}</strong><br><span class="sub">{fund['share_class']} | ISIN: {fund['isin']}</span></td>
-          <td class="mono">{nav_info['date']}</td>
+          <td class="mono">{nav_date}</td>
           <td class="mono">${current_nav:,.2f}</td>
           <td class="mono">${market_value:,.0f}</td>
           <td class="mono {returns_class}">{returns:+.2f}%</td>
-          <td><span class="badge">{fund['current_weight']*100:.1f}%</span></td>
+          <td><span class="badge">{weight*100:.1f}%</span></td>
         </tr>""")
 
-    # 现金行
+    # 现金和存款行
+    cash_weight = dynamic_weights["cash"]
     fund_rows.append(f"""
         <tr class="cash-row">
-          <td><strong>现金</strong></td>
+          <td><strong>现金和存款</strong></td>
           <td>-</td>
           <td>-</td>
-          <td class="mono">${total_value * cash['current_weight']:,.0f}</td>
+          <td class="mono">${cash_value:,.0f}</td>
           <td>-</td>
-          <td><span class="badge">{cash['current_weight']*100:.1f}%</span></td>
+          <td><span class="badge">{cash_weight*100:.1f}%</span></td>
         </tr>""")
 
     # ---- 信号区块 ----
-    sell_section = _build_signal_section(signal_result["sell_signals"], "sell", "赎回/卖出信号")
-    buy_section = _build_signal_section(signal_result["buy_signals"], "buy", "申购/买入信号")
+    sell_section = _build_signal_section(signal_result["sell_signals"], "sell")
+    buy_section = _build_signal_section(signal_result["buy_signals"], "buy")
 
     # ---- 月度趋势图数据 ----
     trend_months = []
@@ -115,12 +138,6 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
       font-weight: 700;
       letter-spacing: 1px;
     }}
-    .header .sub-title {{
-      color: #90cdf4;
-      font-size: 14px;
-      margin-top: 6px;
-      letter-spacing: 0.5px;
-    }}
     .header .update-time {{
       color: #a0aec0;
       font-size: 13px;
@@ -143,6 +160,72 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
       padding-bottom: 10px;
       border-bottom: 2px solid #e2e8f0;
       font-weight: 700;
+    }}
+
+    /* 板块编号 */
+    .section-num {{
+      display: inline-block;
+      width: 28px; height: 28px;
+      line-height: 28px;
+      text-align: center;
+      background: #1a365d;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 700;
+      margin-right: 10px;
+      vertical-align: middle;
+    }}
+
+    /* 资产总额 */
+    .total-assets-box {{
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+    }}
+    .total-assets-box .label {{
+      font-size: 16px;
+      color: #475569;
+      font-weight: 600;
+    }}
+    .total-assets-box .value {{
+      font-size: 42px;
+      font-weight: 800;
+      color: #1a365d;
+      font-variant-numeric: tabular-nums;
+    }}
+    .total-assets-box .currency {{
+      font-size: 18px;
+      color: #64748b;
+      font-weight: 600;
+    }}
+    .total-breakdown {{
+      margin-top: 20px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }}
+    .breakdown-item {{
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }}
+    .breakdown-item .b-label {{
+      font-size: 12px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }}
+    .breakdown-item .b-value {{
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+      font-variant-numeric: tabular-nums;
+      margin-top: 4px;
     }}
 
     /* 信号区块 */
@@ -215,7 +298,33 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
     }}
     #trendChart {{
       width: 100%;
-      height: 380px;
+      height: 400px;
+      display: block;
+    }}
+    #chartTooltip {{
+      position: absolute;
+      display: none;
+      background: rgba(30,41,59,0.95);
+      color: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10;
+    }}
+    #chartTooltip .tt-date {{
+      font-weight: 700;
+      margin-bottom: 2px;
+    }}
+    #chartTooltip .tt-line {{
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }}
+    #chartTooltip .tt-dot {{
+      width: 8px; height: 8px; border-radius: 50%;
     }}
 
     /* 规则说明 */
@@ -228,7 +337,7 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
       display: flex; align-items: flex-start; gap: 8px;
     }}
     .rules-section li::before {{
-      content: "▪"; color: #2c5282; font-weight: bold;
+      content: "\\25AA"; color: #2c5282; font-weight: bold;
     }}
     .rules-section code {{
       background: #e0e7ff; padding: 2px 8px; border-radius: 4px;
@@ -236,6 +345,16 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
       min-width: 44px; display: inline-block; text-align: center;
       margin-right: 4px;
     }}
+
+    /* 免责条款 */
+    .disclaimer {{
+      text-align: center;
+      padding: 16px 24px;
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.8;
+    }}
+    .disclaimer p {{ margin: 4px 0; }}
   </style>
 </head>
 <body>
@@ -244,25 +363,36 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
     <!-- 头部 -->
     <div class="header">
       <h1>Overseas Treasury</h1>
-      <div class="sub-title">境外基金投资组合监控</div>
       <div class="update-time">最后更新: {now_str}</div>
     </div>
 
-    <!-- 卖出信号 -->
-    <div class="card signal-card sell">
-      <h2><span class="icon">🔴</span>赎回/卖出信号</h2>
-      {sell_section if sell_section else '<div class="no-signal">暂无卖出信号触发</div>'}
-    </div>
-
-    <!-- 买入信号 -->
-    <div class="card signal-card buy">
-      <h2><span class="icon">🟢</span>申购/买入信号</h2>
-      {buy_section if buy_section else '<div class="no-signal">暂无买入信号触发</div>'}
-    </div>
-
-    <!-- 投资明细表（全宽） -->
+    <!-- 第一板块：资产总额 -->
     <div class="card">
-      <h2>投资明细</h2>
+      <h2><span class="section-num">1</span>资产总额</h2>
+      <div class="total-assets-box">
+        <span class="label">资产总额</span>
+        <span class="value">${total_assets:,.0f}</span>
+        <span class="currency">USD</span>
+      </div>
+      <div class="total-breakdown">
+        <div class="breakdown-item">
+          <div class="b-label">基金市值合计</div>
+          <div class="b-value">${total_assets - cash_value:,.0f}</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-label">现金和存款</div>
+          <div class="b-value">${cash_value:,.0f}</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-label">基金数量</div>
+          <div class="b-value">{len(funds)}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第二板块：投资明细 -->
+    <div class="card">
+      <h2><span class="section-num">2</span>投资明细</h2>
       <div class="table-wrapper">
         <table>
           <thead>
@@ -282,17 +412,18 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
       </div>
     </div>
 
-    <!-- 净值趋势（月度折线图） -->
+    <!-- 第三板块：净值趋势 -->
     <div class="card">
-      <h2>净值趋势 (2025年1月至今 · 月末净值)</h2>
+      <h2><span class="section-num">3</span>净值趋势 (2025年1月至今 · 月末净值)</h2>
       <div class="trend-container">
         <canvas id="trendChart"></canvas>
+        <div id="chartTooltip"></div>
       </div>
     </div>
 
-    <!-- 量化规则说明 -->
+    <!-- 第四板块：规则说明 -->
     <div class="card rules-section">
-      <h2>量化信号规则说明</h2>
+      <h2><span class="section-num">4</span>量化信号规则说明</h2>
       <h3>卖出规则</h3>
       <ul>
         <li><code>S-01</code>止盈止损: 累计收益 ≥+15%触发止盈, ≥+25%强止盈; ≤-8%止损预警, ≤-12%强止损</li>
@@ -315,30 +446,51 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
       </ul>
     </div>
 
+    <!-- 第五板块：赎回/卖出信号 -->
+    <div class="card signal-card sell">
+      <h2><span class="section-num">5</span><span class="icon">🔴</span>赎回/卖出信号</h2>
+      {sell_section if sell_section else '<div class="no-signal">暂无卖出信号触发</div>'}
+    </div>
+
+    <!-- 第六板块：申购/买入信号 -->
+    <div class="card signal-card buy">
+      <h2><span class="section-num">6</span><span class="icon">🟢</span>申购/买入信号</h2>
+      {buy_section if buy_section else '<div class="no-signal">暂无买入信号触发</div>'}
+    </div>
+
+    <!-- 免责条款 -->
+    <div class="disclaimer">
+      <p>本页面由量化规则自动生成，所有信号和数据仅供参考，不构成任何投资建议。</p>
+      <p>投资有风险，过往业绩不代表未来表现，请根据自身风险承受能力独立决策。</p>
+    </div>
+
   </div>
 
   <script>
-    // ---- 月度净值趋势折线图 ----
+    // ---- 月度净值趋势折线图 (带tooltip) ----
     const trendData = {trend_json};
     const monthLabels = {months_json};
 
     const canvas = document.getElementById('trendChart');
     const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('chartTooltip');
+
+    // 存储绘制坐标用于tooltip
+    let pointCoords = []; // {{ x, y, month, nav, fid, label, color }}
 
     function drawChart() {{
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * dpr;
-      canvas.height = 380 * dpr;
+      canvas.height = 400 * dpr;
       ctx.scale(dpr, dpr);
 
       const W = rect.width;
-      const H = 380;
+      const H = 400;
       const padL = 70, padR = 30, padT = 50, padB = 50;
       const chartW = W - padL - padR;
       const chartH = H - padT - padB;
 
-      // 收集所有NAV值
       let allVals = [];
       Object.values(trendData).forEach(f => {{
         f.data.forEach(d => allVals.push(d.nav));
@@ -355,10 +507,11 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
       const n = monthLabels.length;
       const xStep = n > 1 ? chartW / (n - 1) : 0;
 
-      // 清空
+      pointCoords = [];
+
       ctx.clearRect(0, 0, W, H);
 
-      // 网格线 (水平)
+      // 网格线
       ctx.strokeStyle = '#e2e8f0';
       ctx.lineWidth = 1;
       ctx.font = '11px -apple-system, sans-serif';
@@ -374,14 +527,12 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
         ctx.fillText(val.toFixed(2), padL - 8, y + 4);
       }}
 
-      // X轴标签 (每隔适当数量显示)
+      // X轴标签
       ctx.textAlign = 'center';
       const labelStep = Math.ceil(n / 12);
       for (let i = 0; i < n; i += labelStep) {{
         const x = padL + xStep * i;
-        const label = monthLabels[i];
-        const shortLabel = label.substring(2); // YY-MM -> -MM
-        ctx.fillText(shortLabel, x, H - padB + 18);
+        ctx.fillText(monthLabels[i].substring(5), x, H - padB + 18);
       }}
 
       // Y轴标题
@@ -399,7 +550,6 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
         const vals = f.data.map(d => d.nav);
         if (vals.length < 1) return;
 
-        // 线条
         ctx.strokeStyle = f.color;
         ctx.lineWidth = 2.5;
         ctx.lineJoin = 'round';
@@ -413,21 +563,30 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
         }});
         ctx.stroke();
 
-        // 数据点
+        // 数据点 + 存储坐标
         vals.forEach((v, i) => {{
           const x = padL + xStep * i;
           const y = padT + chartH * (1 - (v - yMin) / yRange);
           ctx.fillStyle = f.color;
           ctx.beginPath();
-          ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = '#fff';
           ctx.beginPath();
-          ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
           ctx.fill();
+
+          pointCoords.push({{
+            x: x, y: y,
+            month: f.data[i].month,
+            nav: v,
+            fid: fid,
+            label: f.label,
+            color: f.color
+          }});
         }});
 
-        // 最后一个点的数值标注
+        // 最后一个点标注
         const lastIdx = vals.length - 1;
         const lastX = padL + xStep * lastIdx;
         const lastY = padT + chartH * (1 - (vals[lastIdx] - yMin) / yRange);
@@ -451,6 +610,44 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
       }});
     }}
 
+    // Tooltip 交互
+    canvas.addEventListener('mousemove', function(e) {{
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      // 找最近的点
+      let closest = null;
+      let minDist = 20;
+      pointCoords.forEach(p => {{
+        const dist = Math.sqrt((p.x - mx) ** 2 + (p.y - my) ** 2);
+        if (dist < minDist) {{
+          minDist = dist;
+          closest = p;
+        }}
+      }});
+
+      if (closest) {{
+        // 找同月份所有基金的数据
+        const sameMonth = pointCoords.filter(p => p.month === closest.month);
+        let html = '<div class="tt-date">' + closest.month + '</div>';
+        sameMonth.forEach(p => {{
+          html += '<div class="tt-line"><span class="tt-dot" style="background:' + p.color + '"></span>' +
+                  p.label + ': $' + p.nav.toFixed(2) + '</div>';
+        }});
+        tooltip.innerHTML = html;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (closest.x + 15) + 'px';
+        tooltip.style.top = (closest.y - 10) + 'px';
+      }} else {{
+        tooltip.style.display = 'none';
+      }}
+    }});
+
+    canvas.addEventListener('mouseleave', function() {{
+      tooltip.style.display = 'none';
+    }});
+
     drawChart();
     window.addEventListener('resize', drawChart);
   </script>
@@ -460,7 +657,7 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history):
     return html
 
 
-def _build_signal_section(signals, signal_type, title):
+def _build_signal_section(signals, signal_type):
     """构建信号区块HTML"""
     if not signals:
         return ""
