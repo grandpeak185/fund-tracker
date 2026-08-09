@@ -786,5 +786,159 @@
         "fund_name": "东方汇理收益机遇基金"
       }
     ]
+  },
+  {
+    "date": "2026-08-10",
+    "timestamp": "2026-08-10T05:23:03.995095+08:00",
+    "nav_data": {
+      "value_partners": {
+        "nav": 12.58,
+        "date": "2026-08-06",
+        "source": "known_snapshot",
+        "isin": "HK0000288784"
+      },
+      "jpm_asia_pacific": {
+        "nav": 122.87,
+        "date": "2026-08-05",
+        "source": "known_snapshot",
+        "isin": "LU0784639295"
+      },
+      "amundi_income": {
+        "nav": 83.72,
+        "date": "06.08.2026",
+        "source": "primary",
+        "isin": "LU1883839398"
+      }
+    },
+    "portfolio": {
+      "fund_market_values": {
+        "value_partners": 59786.07707509882,
+        "jpm_asia_pacific": 90155.17622877569,
+        "amundi_income": 77883.05004646223
+      },
+      "cash_value": 94896,
+      "total_assets": 322720.30335033673,
+      "dynamic_weights": {
+        "value_partners": 0.1852566338542283,
+        "jpm_asia_pacific": 0.27936010003964823,
+        "amundi_income": 0.24133297235381693,
+        "cash": 0.29405029375230657
+      }
+    },
+    "summary": {
+      "overall_signal": "SELL",
+      "overall_detail": "检测到 5 个强卖出信号，建议立即执行赎回操作",
+      "sell_count": 6,
+      "buy_count": 0,
+      "hold_count": 0,
+      "strong_sell_count": 5,
+      "strong_buy_count": 0
+    },
+    "signals": [
+      {
+        "rule": "S-01",
+        "name": "止盈信号（强·高位调制）",
+        "detail": "累计收益率 24.3% 触及止盈区间 [10%, 25%]，可考虑分批减仓 [价格分位数100%≥85%，止盈门槛下调至10%]",
+        "action": "sell",
+        "strength": "strong",
+        "score": 38,
+        "suggested_action": {
+          "type": "redeem",
+          "fund": "惠理高息股票基金",
+          "current_value": 59786.08,
+          "redeem_amount": 5689.02,
+          "description": "建议分批赎回 惠理高息股票基金 约 $5,689，逐步向目标仓位 15% 靠拢"
+        },
+        "fund_id": "value_partners",
+        "fund_name": "惠理高息股票基金"
+      },
+      {
+        "rule": "S-04",
+        "name": "仓位超配",
+        "detail": "惠理高息股票基金 当前权重 18.5% 超出目标 15% 达 3.5%，建议再平衡减仓约 $11,378",
+        "action": "sell",
+        "strength": "medium",
+        "score": 20,
+        "suggested_action": {
+          "type": "rebalance_sell",
+          "fund": "惠理高息股票基金",
+          "amount": 11378.03,
+          "description": "再平衡: 赎回 惠理高息股票基金 约 $11,378，使权重回归 15%"
+        },
+        "fund_id": "value_partners",
+        "fund_name": "惠理高息股票基金"
+      },
+      {
+        "rule": "S-06",
+        "name": "历史极端高位（强）",
+        "detail": "惠理高息股票基金 当前价格分位数 99.6%（高于95%极端线），处于历史极高位置，回调风险极大，建议立即减仓",
+        "action": "sell",
+        "strength": "strong",
+        "score": 35,
+        "suggested_action": {
+          "type": "redeem",
+          "fund": "惠理高息股票基金",
+          "current_value": 59786.08,
+          "target_value": 48408.05,
+          "redeem_amount": 11378.03,
+          "description": "建议赎回 惠理高息股票基金 约 $11,378，将仓位从 18.5% 减至 15%"
+        },
+        "fund_id": "value_partners",
+        "fund_name": "惠理高息股票基金"
+      },
+      {
+        "rule": "S-06",
+        "name": "历史极端高位（强）",
+        "detail": "JPM亚太入息基金 当前价格分位数 95.7%（高于95%极端线），处于历史极高位置，回调风险极大，建议立即减仓",
+        "action": "sell",
+        "strength": "strong",
+        "score": 35,
+        "suggested_action": {
+          "type": "redeem",
+          "fund": "JPM亚太入息基金",
+          "current_value": 90155.18,
+          "target_value": 80680.08,
+          "redeem_amount": 9475.1,
+          "description": "建议赎回 JPM亚太入息基金 约 $9,475，将仓位从 27.9% 减至 25%"
+        },
+        "fund_id": "jpm_asia_pacific",
+        "fund_name": "JPM亚太入息基金"
+      },
+      {
+        "rule": "S-01",
+        "name": "止盈信号（强·高位调制）",
+        "detail": "累计收益率 11.1% 触及止盈区间 [10%, 25%]，可考虑分批减仓 [价格分位数100%≥85%，止盈门槛下调至10%]",
+        "action": "sell",
+        "strength": "strong",
+        "score": 38,
+        "suggested_action": {
+          "type": "redeem",
+          "fund": "东方汇理收益机遇基金",
+          "current_value": 77883.05,
+          "redeem_amount": -1398.51,
+          "description": "建议分批赎回 东方汇理收益机遇基金 约 $-1,399，逐步向目标仓位 25% 靠拢"
+        },
+        "fund_id": "amundi_income",
+        "fund_name": "东方汇理收益机遇基金"
+      },
+      {
+        "rule": "S-06",
+        "name": "历史极端高位（强）",
+        "detail": "东方汇理收益机遇基金 当前价格分位数 100.0%（高于95%极端线），处于历史极高位置，回调风险极大，建议立即减仓",
+        "action": "sell",
+        "strength": "strong",
+        "score": 35,
+        "suggested_action": {
+          "type": "redeem",
+          "fund": "东方汇理收益机遇基金",
+          "current_value": 77883.05,
+          "target_value": 80680.08,
+          "redeem_amount": -2797.03,
+          "description": "建议赎回 东方汇理收益机遇基金 约 $-2,797，将仓位从 24.1% 减至 25%"
+        },
+        "fund_id": "amundi_income",
+        "fund_name": "东方汇理收益机遇基金"
+      }
+    ]
   }
 ]
