@@ -73,9 +73,20 @@ def main():
         if sig.get("suggested_action"):
             print(f"      → {sig['suggested_action']['description']}")
 
-    # 5. 生成HTML报告
+    # 5. 加载月度净值历史数据
+    monthly_nav_path = config_path.parent / "data" / "monthly_nav_history.json"
+    monthly_nav_history = {}
+    if monthly_nav_path.exists():
+        with open(monthly_nav_path, "r", encoding="utf-8") as f:
+            try:
+                monthly_nav_history = json.load(f)
+            except json.JSONDecodeError:
+                monthly_nav_history = {}
+    print(f"  月度净值历史: {sum(len(v.get('monthly_nav', [])) for v in monthly_nav_history.values())} 条记录")
+
+    # 6. 生成HTML报告
     print("\n[4/4] 生成HTML报告...")
-    html_content = generate_html(config, nav_data, signal_result, nav_history_series)
+    html_content = generate_html(config, nav_data, signal_result, monthly_nav_history)
 
     # 输出到 index.html
     output_path = config_path.parent / "index.html"
