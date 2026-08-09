@@ -118,7 +118,13 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Overseas Treasury">
+  <meta name="theme-color" content="#1a365d">
+  <link rel="manifest" href="manifest.json">
   <title>Overseas Treasury</title>
   <style>
     * {{ margin: 0; padding: 0; box-sizing: border-box; }}
@@ -128,8 +134,10 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
       color: #1e293b;
       line-height: 1.6;
       min-height: 100vh;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
     }}
-    .container {{ max-width: 1200px; margin: 0 auto; padding: 24px; }}
+    .container {{ max-width: 1200px; margin: 0 auto; padding: 24px; padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }}
 
     /* 头部 */
     .header {{
