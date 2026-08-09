@@ -1,0 +1,450 @@
+#!/usr/bin/env python3
+"""
+量化信号引擎
+基于多维度量化规则生成基金买卖信号
+
+信号规则体系：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【卖出/赎回信号】
+  S-01 止盈止损: 累计收益率触及止盈线(+15%~+25%)或止损线(-8%~-12%)
+  S-02 趋势反转: MA5下穿MA20（死叉），或MA20下穿MA60
+  S-03 估值过高: PE分位数 > 80%（危险区）
+  S-04 仓位偏离: 持仓权重超出目标权重 +3%以上，触发再平衡减仓
+  S-05 急跌熔断: 5个交易日内跌幅超15%，触发人工复核（不自动卖出）
+
+【买入/申购信号】
+  B-01 估值低位: PE分位数 < 30%（安全边际区）
+  B-02 趋势确立: MA5上穿MA20（金叉），且成交量放大
+  B-03 回撤修复: 净值从高点回撤15%-25%后企稳
+  B-04 现金过多: 现金仓位超过30%，建议配置
+  B-05 仓位不足: 持仓权重低于目标权重 -3%以上，触发再平衡加仓
+  B-06 定投加速: 估值低位+趋势确立同时触发，定投金额翻倍
+
+【信号强度分级】
+  强信号(立即执行): ≥3条核心规则同时触发
+  中信号(分批操作): 2条规则触发
+  弱信号(观望预警): 1条规则触发
+"""
+
+import json
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+from collections import deque
+
+CST = timezone(timedelta(hours=8))
+
+
+class SignalEngine:
+    """量化信号引擎"""
+
+    def __init__(self, config):
+        self.config = config
+        self.rules = config["signal_rules"]
+        self.funds = config["funds"]
+        self.cash = config["cash"]
+        self.total_value = config["portfolio"]["total_value_usd"]
+
+    def calculate_returns(self, current_nav, cost_nav):
+        """计算累计收益率"""
+        if cost_nav <= 0:
+            return 0.0
+        return (current_nav - cost_nav) / cost_nav
+
+    def calculate_drawdown(self, nav_history):
+        """计算从历史最高点的回撤幅度"""
+        if not nav_history or len(nav_history) < 2:
+            return 0.0
+        peak = max(nav_history)
+        current = nav_history[-1]
+        if peak <= 0:
+            return 0.0
+        return (peak - current) / peak
+
+    def calculate_moving_averages(self, nav_history):
+        """计算移动平均线"""
+        ma_short = self.rules["ma_short"]
+        ma_mid = self.rules["ma_mid"]
+        ma_long = self.rules["ma_long"]
+
+        result = {"ma5": None, "ma20": None, "ma60": None}
+
+        if len(nav_history) >= ma_short:
+            result["ma5"] = sum(nav_history[-ma_short:]) / ma_short
+        if len(nav_history) >= ma_mid:
+            result["ma20"] = sum(nav_history[-ma_mid:]) / ma_mid
+        if len(nav_history) >= ma_long:
+            result["ma60"] = sum(nav_history[-ma_long:]) / ma_long
+
+        return result
+
+    def detect_cross(self, nav_history):
+        """检测均线交叉信号"""
+        signals = []
+
+        if len(nav_history) < self.rules["ma_mid"] + 1:
+            return signals
+
+        ma_s = self.rules["ma_short"]
+        ma_m = self.rules["ma_mid"]
+
+        # 计算当前和前一天的MA
+        current_ma5 = sum(nav_history[-ma_s:]) / ma_s
+        current_ma20 = sum(nav_history[-ma_m:]) / ma_m
+        prev_ma5 = sum(nav_history[-ma_s - 1:-1]) / ma_s
+        prev_ma20 = sum(nav_history[-ma_m - 1:-1]) / ma_m
+
+        # 金叉: MA5从下方上穿MA20
+        if prev_ma5 <= prev_ma20 and current_ma5 > current_ma20:
+            signals.append({
+                "rule": "B-02",
+                "name": "趋势确立（金叉）",
+                "detail": f"MA5({current_ma5:.4f})上穿MA20({current_ma20:.4f})，趋势向上确立",
+                "action": "buy",
+                "strength": "medium",
+                "score": 25,
+            })
+
+        # 死叉: MA5从上方下穿MA20
+        if prev_ma5 >= prev_ma20 and current_ma5 < current_ma20:
+            signals.append({
+                "rule": "S-02",
+                "name": "趋势反转（死叉）",
+                "detail": f"MA5({current_ma5:.4f})下穿MA20({current_ma20:.4f})，趋势向下反转",
+                "action": "sell",
+                "strength": "medium",
+                "score": 25,
+            })
+
+        return signals
+
+    def check_stop_profit_loss(self, fund_id, current_nav, cost_nav):
+        """检查止盈止损信号 S-01"""
+        signals = []
+        returns = self.calculate_returns(current_nav, cost_nav)
+
+        sp_low = self.rules["stop_profit_low"]
+        sp_high = self.rules["stop_profit_high"]
+        sl_low = self.rules["stop_loss_low"]
+        sl_high = self.rules["stop_loss_high"]
+
+        if returns >= sp_high:
+            signals.append({
+                "rule": "S-01",
+                "name": "止盈信号（强）",
+                "detail": f"累计收益率 {returns*100:.1f}% 已超过强止盈线 {sp_high*100:.0f}%，建议赎回至目标仓位",
+                "action": "sell",
+                "strength": "strong",
+                "score": 40,
+                "suggested_action": self._build_redeem_suggestion(fund_id, "strong"),
+            })
+        elif returns >= sp_low:
+            signals.append({
+                "rule": "S-01",
+                "name": "止盈信号（中）",
+                "detail": f"累计收益率 {returns*100:.1f}% 触及止盈区间 [{sp_low*100:.0f}%, {sp_high*100:.0f}%]，可考虑分批减仓",
+                "action": "sell",
+                "strength": "medium",
+                "score": 30,
+                "suggested_action": self._build_redeem_suggestion(fund_id, "medium"),
+            })
+
+        if returns <= sl_high:
+            signals.append({
+                "rule": "S-01",
+                "name": "止损信号（强）",
+                "detail": f"累计收益率 {returns*100:.1f}% 已跌破止损线 {sl_high*100:.0f}%，建议立即止损赎回",
+                "action": "sell",
+                "strength": "strong",
+                "score": 40,
+                "suggested_action": self._build_redeem_suggestion(fund_id, "strong_stoploss"),
+            })
+        elif returns <= sl_low:
+            signals.append({
+                "rule": "S-01",
+                "name": "止损预警",
+                "detail": f"累计收益率 {returns*100:.1f}% 接近止损线 [{sl_low*100:.0f}%, {sl_high*100:.0f}%]，密切关注",
+                "action": "sell",
+                "strength": "weak",
+                "score": 15,
+            })
+
+        return signals
+
+    def _build_redeem_suggestion(self, fund_id, strength):
+        """构建赎回建议"""
+        fund = next((f for f in self.funds if f["id"] == fund_id), None)
+        if not fund:
+            return None
+
+        current_value = self.total_value * fund["current_weight"]
+        target_value = self.total_value * fund["target_weight"]
+
+        if strength == "strong":
+            # 强止盈: 减仓至目标仓位
+            redeem_amount = current_value - target_value
+            return {
+                "type": "redeem",
+                "fund": fund["name_cn"],
+                "current_value": round(current_value, 2),
+                "target_value": round(target_value, 2),
+                "redeem_amount": round(redeem_amount, 2),
+                "target_weight_pct": fund["target_weight"] * 100,
+                "description": f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，将仓位从 {fund['current_weight']*100:.1f}% 减至 {fund['target_weight']*100:.0f}%",
+            }
+        elif strength == "medium":
+            # 中止盈: 减仓一半超出部分
+            excess = current_value - target_value
+            redeem_amount = excess * 0.5
+            return {
+                "type": "redeem",
+                "fund": fund["name_cn"],
+                "current_value": round(current_value, 2),
+                "redeem_amount": round(redeem_amount, 2),
+                "description": f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，逐步向目标仓位 {fund['target_weight']*100:.0f}% 靠拢",
+            }
+        elif strength == "strong_stoploss":
+            # 止损: 赎回到只剩底仓5%
+            bottom_value = self.total_value * 0.05
+            redeem_amount = current_value - bottom_value
+            return {
+                "type": "redeem",
+                "fund": fund["name_cn"],
+                "current_value": round(current_value, 2),
+                "redeem_amount": round(redeem_amount, 2),
+                "description": f"止损赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，仅保留5%底仓观察",
+            }
+        return None
+
+    def check_weight_deviation(self, fund_id):
+        """检查仓位偏离信号 S-04 / B-05"""
+        signals = []
+        fund = next((f for f in self.funds if f["id"] == fund_id), None)
+        if not fund:
+            return signals
+
+        deviation = fund["current_weight"] - fund["target_weight"]
+        threshold = self.rules["weight_deviation_threshold"]
+
+        if deviation > threshold:
+            current_value = self.total_value * fund["current_weight"]
+            target_value = self.total_value * fund["target_weight"]
+            excess = current_value - target_value
+            signals.append({
+                "rule": "S-04",
+                "name": "仓位超配",
+                "detail": f"{fund['name_cn']} 当前权重 {fund['current_weight']*100:.1f}% 超出目标 {fund['target_weight']*100:.0f}% 达 {deviation*100:.1f}%，建议再平衡减仓约 ${excess:,.0f}",
+                "action": "sell",
+                "strength": "medium",
+                "score": 20,
+                "suggested_action": {
+                    "type": "rebalance_sell",
+                    "fund": fund["name_cn"],
+                    "amount": round(excess, 2),
+                    "description": f"再平衡: 赎回 {fund['name_cn']} 约 ${excess:,.0f}，使权重回归 {fund['target_weight']*100:.0f}%",
+                },
+            })
+        elif deviation < -threshold:
+            current_value = self.total_value * fund["current_weight"]
+            target_value = self.total_value * fund["target_weight"]
+            shortfall = target_value - current_value
+            signals.append({
+                "rule": "B-05",
+                "name": "仓位低配",
+                "detail": f"{fund['name_cn']} 当前权重 {fund['current_weight']*100:.1f}% 低于目标 {fund['target_weight']*100:.0f}% 达 {abs(deviation)*100:.1f}%，建议再平衡加仓约 ${shortfall:,.0f}",
+                "action": "buy",
+                "strength": "medium",
+                "score": 20,
+                "suggested_action": {
+                    "type": "rebalance_buy",
+                    "fund": fund["name_cn"],
+                    "amount": round(shortfall, 2),
+                    "description": f"再平衡: 申购 {fund['name_cn']} 约 ${shortfall:,.0f}，使权重回归 {fund['target_weight']*100:.0f}%",
+                },
+            })
+
+        return signals
+
+    def check_cash_position(self):
+        """检查现金仓位 B-04"""
+        signals = []
+        cash_weight = self.cash["current_weight"]
+        high_threshold = self.rules["cash_high_threshold"]
+        low_threshold = self.rules["cash_low_threshold"]
+
+        if cash_weight > high_threshold:
+            cash_value = self.total_value * cash_weight
+            excess_cash = self.total_value * (cash_weight - self.cash["target_weight"])
+            signals.append({
+                "rule": "B-04",
+                "name": "现金仓位过高",
+                "detail": f"现金占比 {cash_weight*100:.1f}% 超过阈值 {high_threshold*100:.0f}%，持有闲置现金约 ${self.total_value * cash_weight:,.0f}，建议配置至低配基金或优质固收产品",
+                "action": "buy",
+                "strength": "medium",
+                "score": 20,
+                "suggested_action": {
+                    "type": "deploy_cash",
+                    "amount": round(excess_cash, 2),
+                    "description": f"建议将约 ${excess_cash:,.0f} 现金配置至低配基金或美元货币基金（年化约4%）",
+                },
+            })
+        elif cash_weight < low_threshold:
+            signals.append({
+                "rule": "S-05",
+                "name": "现金仓位过低",
+                "detail": f"现金占比 {cash_weight*100:.1f}% 低于阈值 {low_threshold*100:.0f}%，防御厚度不足，建议适当减仓补充现金",
+                "action": "sell",
+                "strength": "weak",
+                "score": 10,
+            })
+
+        return signals
+
+    def check_drawdown(self, fund_id, nav_history):
+        """检查回撤修复信号 B-03"""
+        signals = []
+        if len(nav_history) < 5:
+            return signals
+
+        drawdown = self.calculate_drawdown(nav_history)
+        buy_low = self.rules["drawdown_buy_low"]
+        buy_high = self.rules["drawdown_buy_high"]
+
+        if buy_low <= drawdown <= buy_high:
+            # 检查是否企稳（最近3天净值波动小于1%）
+            if len(nav_history) >= 3:
+                recent = nav_history[-3:]
+                volatility = (max(recent) - min(recent)) / max(recent) if max(recent) > 0 else 0
+                if volatility < 0.01:
+                    fund = next((f for f in self.funds if f["id"] == fund_id), None)
+                    if fund:
+                        signals.append({
+                            "rule": "B-03",
+                            "name": "回撤企稳买入",
+                            "detail": f"{fund['name_cn']} 从高点回撤 {drawdown*100:.1f}%，近3日波动仅 {volatility*100:.2f}%，已企稳可考虑逢低布局",
+                            "action": "buy",
+                            "strength": "medium",
+                            "score": 25,
+                        })
+
+        # 急跌熔断 S-05
+        if len(nav_history) >= 6:
+            recent_drop = (nav_history[-6] - nav_history[-1]) / nav_history[-6] if nav_history[-6] > 0 else 0
+            if recent_drop > self.rules["circuit_breaker_drop"]:
+                fund = next((f for f in self.funds if f["id"] == fund_id), None)
+                if fund:
+                    signals.append({
+                        "rule": "S-05",
+                        "name": "急跌熔断（暂停自动操作）",
+                        "detail": f"{fund['name_cn']} 近5日跌幅 {recent_drop*100:.1f}% 超过熔断线 {self.rules['circuit_breaker_drop']*100:.0f}%，暂停自动卖出，转为人工复核",
+                        "action": "hold",
+                        "strength": "strong",
+                        "score": 0,
+                    })
+
+        return signals
+
+    def generate_all_signals(self, nav_data, nav_history_data):
+        """生成所有信号"""
+        all_signals = []
+
+        for fund in self.funds:
+            fund_id = fund["id"]
+            fund_name = fund["name_cn"]
+            current_nav = nav_data[fund_id]["nav"]
+            cost_nav = fund["cost_nav"]
+
+            # 获取该基金的历史净值序列
+            fund_nav_history = []
+            if fund_id in nav_history_data:
+                fund_nav_history = nav_history_data[fund_id]
+
+            # 确保当前净值加入历史
+            if not fund_nav_history or fund_nav_history[-1] != current_nav:
+                fund_nav_history = fund_nav_history + [current_nav]
+
+            fund_signals = []
+
+            # S-01: 止盈止损
+            fund_signals.extend(self.check_stop_profit_loss(fund_id, current_nav, cost_nav))
+
+            # S-02: 均线交叉
+            fund_signals.extend(self.detect_cross(fund_nav_history))
+
+            # S-04 / B-05: 仓位偏离
+            fund_signals.extend(self.check_weight_deviation(fund_id))
+
+            # B-03 / S-05: 回撤与熔断
+            fund_signals.extend(self.check_drawdown(fund_id, fund_nav_history))
+
+            for sig in fund_signals:
+                sig["fund_id"] = fund_id
+                sig["fund_name"] = fund_name
+                all_signals.append(sig)
+
+        # 现金仓位检查
+        all_signals.extend(self.check_cash_position())
+
+        # 计算综合信号强度
+        sell_signals = [s for s in all_signals if s["action"] == "sell"]
+        buy_signals = [s for s in all_signals if s["action"] == "buy"]
+        hold_signals = [s for s in all_signals if s["action"] == "hold"]
+
+        # 信号优先级处理
+        if hold_signals:
+            # 有熔断信号时，降级其他信号
+            for s in sell_signals:
+                s["strength"] = "suspended"
+                s["detail"] = "[熔断保护] " + s["detail"]
+
+        summary = self._build_signal_summary(sell_signals, buy_signals, hold_signals)
+
+        return {
+            "signals": all_signals,
+            "sell_signals": sell_signals,
+            "buy_signals": buy_signals,
+            "hold_signals": hold_signals,
+            "summary": summary,
+            "generated_at": datetime.now(CST).isoformat(),
+        }
+
+    def _build_signal_summary(self, sell_signals, buy_signals, hold_signals):
+        """构建信号摘要"""
+        sell_count = len(sell_signals)
+        buy_count = len(buy_signals)
+        hold_count = len(hold_signals)
+
+        strong_sells = [s for s in sell_signals if s.get("strength") == "strong"]
+        strong_buys = [s for s in buy_signals if s.get("strength") == "strong"]
+
+        if hold_count > 0:
+            overall = "HOLD (熔断保护)"
+            overall_detail = "市场出现急跌，自动交易已暂停，建议人工复核后决策"
+        elif strong_sells:
+            overall = "SELL"
+            overall_detail = f"检测到 {len(strong_sells)} 个强卖出信号，建议立即执行赎回操作"
+        elif strong_buys:
+            overall = "BUY"
+            overall_detail = f"检测到 {len(strong_buys)} 个强买入信号，建议把握申购机会"
+        elif sell_count > 0 and buy_count > 0:
+            overall = "REBALANCE"
+            overall_detail = f"同时检测到 {sell_count} 个卖出信号和 {buy_count} 个买入信号，建议进行组合再平衡"
+        elif sell_count > 0:
+            overall = "CAUTION"
+            overall_detail = f"检测到 {sell_count} 个卖出信号（无强信号），建议关注但暂不急操作"
+        elif buy_count > 0:
+            overall = "OPPORTUNITY"
+            overall_detail = f"检测到 {buy_count} 个买入信号（无强信号），可考虑小仓位布局"
+        else:
+            overall = "HOLD"
+            overall_detail = "无买卖信号触发，维持当前持仓"
+
+        return {
+            "overall_signal": overall,
+            "overall_detail": overall_detail,
+            "sell_count": sell_count,
+            "buy_count": buy_count,
+            "hold_count": hold_count,
+            "strong_sell_count": len(strong_sells),
+            "strong_buy_count": len(strong_buys),
+        }

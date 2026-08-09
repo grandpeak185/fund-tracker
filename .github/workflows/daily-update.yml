@@ -1,0 +1,35 @@
+name: 每日基金净值更新
+
+on:
+  schedule:
+    # 每天北京时间 12:00 (UTC 04:00) 运行
+    - cron: '0 4 * * *'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 运行更新脚本
+        run: |
+          cd src
+          python main.py
+
+      - name: 提交并推送更新
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "自动更新: $(date -u -d '+8 hours' '+%Y-%m-%d %H:%M') 基金净值与信号" || echo "无变更需提交"
+          git push

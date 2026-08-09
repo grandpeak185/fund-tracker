@@ -1,0 +1,84 @@
+{
+  "portfolio": {
+    "total_value_usd": 323143.29,
+    "base_date": "2026-08-09",
+    "currency": "USD"
+  },
+  "funds": [
+    {
+      "id": "value_partners",
+      "name_cn": "惠理高息股票基金",
+      "name_en": "Value Partners High Dividend Stocks Fund",
+      "share_class": "A2 MDis USD",
+      "isin": "HK0000288784",
+      "currency": "USD",
+      "current_weight": 0.185,
+      "target_weight": 0.15,
+      "cost_nav": 10.12,
+      "ncb_available": true,
+      "nav_source": "morningstar",
+      "morningstar_id": "F00000YIGY",
+      "nav_url": "https://www.morningstar.hk/hk/funds/snapshot/snapshot.aspx?id=F00000YIGY"
+    },
+    {
+      "id": "jpm_asia_pacific",
+      "name_cn": "JPM亚太入息基金",
+      "name_en": "JPMorgan Funds - Asia Pacific Income Fund",
+      "share_class": "A (mth) USD",
+      "isin": "LU0784639295",
+      "currency": "USD",
+      "current_weight": 0.279,
+      "target_weight": 0.25,
+      "cost_nav": 111.90,
+      "ncb_available": true,
+      "nav_source": "jpmorgan",
+      "nav_url": "https://am.jpmorgan.com/ch/de/asset-management/adv/products/jpm-asia-pacific-income-a-mth-usd-lu0784639295"
+    },
+    {
+      "id": "amundi_income",
+      "name_cn": "东方汇理收益机遇基金",
+      "name_en": "Amundi Funds - Income Opportunities",
+      "share_class": "A2 USD (C) Acc",
+      "isin": "LU1883839398",
+      "currency": "USD",
+      "current_weight": 0.241,
+      "target_weight": 0.25,
+      "cost_nav": 75.33,
+      "ncb_available": true,
+      "nav_source": "fonds_super_markt",
+      "nav_url": "https://www.fonds-super-markt.de/fondsfinder/fondsdetails/lu1883839398-amundi-funds-pioneer-income-opportunities-a2-usd-c/"
+    }
+  ],
+  "cash": {
+    "current_weight": 0.295,
+    "target_weight": 0.20,
+    "currency": "USD"
+  },
+  "ncb_fund_pool": [
+    {"name_cn": "惠理高息股票基金", "isin": "HK0000288784", "type": "股票型"},
+    {"name_cn": "JPM亚太入息基金", "isin": "LU0784639295", "type": "股债混合"},
+    {"name_cn": "东方汇理收益机遇基金", "isin": "LU1883839398", "type": "多元资产"},
+    {"name_cn": "摩根亚洲股票高息基金", "isin": "LU0117844026", "type": "股票型"},
+    {"name_cn": "东方汇理环球债券基金", "isin": "LU0210817283", "type": "债券型"},
+    {"name_cn": "东方汇理亚洲智选股票基金", "isin": "LU0573768839", "type": "股票型"}
+  ],
+  "signal_rules": {
+    "stop_profit_low": 0.15,
+    "stop_profit_high": 0.25,
+    "stop_loss_low": -0.08,
+    "stop_loss_high": -0.12,
+    "ma_short": 5,
+    "ma_mid": 20,
+    "ma_long": 60,
+    "pe_danger_percentile": 0.80,
+    "pe_safe_percentile": 0.30,
+    "weight_deviation_threshold": 0.03,
+    "cash_high_threshold": 0.30,
+    "cash_low_threshold": 0.15,
+    "drawdown_buy_low": 0.15,
+    "drawdown_buy_high": 0.25,
+    "volume_surge_ratio": 1.5,
+    "circuit_breaker_drop": 0.15,
+    "circuit_breaker_days": 5
+  }
+}
