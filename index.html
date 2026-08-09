@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <title>Overseas Treasury</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -246,6 +246,131 @@
       line-height: 1.8;
     }
     .disclaimer p { margin: 4px 0; }
+
+    /* ===== 移动端适配 ===== */
+    @media (max-width: 640px) {
+      .container { padding: 12px; }
+
+      /* 头部 */
+      .header {
+        padding: 20px 18px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+      }
+      .header h1 {
+        font-size: 22px;
+        letter-spacing: 0.5px;
+      }
+      .header .update-time {
+        font-size: 12px;
+        margin-top: 8px;
+      }
+
+      /* 卡片 */
+      .card {
+        padding: 16px 14px;
+        margin-bottom: 16px;
+        border-radius: 10px;
+      }
+      .card h2 {
+        font-size: 16px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+      }
+
+      /* 资产总额 */
+      .total-assets-box .label {
+        font-size: 14px;
+      }
+      .total-assets-box .value {
+        font-size: 32px;
+      }
+      .total-assets-box .currency {
+        font-size: 15px;
+      }
+      .total-breakdown {
+        margin-top: 14px;
+        gap: 10px;
+      }
+      .breakdown-item {
+        min-width: 0;
+        flex: 1 1 calc(50% - 5px);
+        padding: 10px 12px;
+      }
+      .breakdown-item .b-value {
+        font-size: 17px;
+      }
+
+      /* 投资明细表 */
+      .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -14px;
+      }
+      .table-wrapper table {
+        min-width: 580px;
+      }
+      table { font-size: 13px; }
+      thead th {
+        padding: 10px 8px;
+        font-size: 11px;
+        letter-spacing: 0.3px;
+      }
+      tbody td {
+        padding: 10px 8px;
+      }
+      .sub { font-size: 11px; }
+
+      /* 趋势图 */
+      #trendChart {
+        height: 280px;
+      }
+
+      /* Tooltip */
+      #chartTooltip {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+
+      /* 信号 */
+      .signal-item {
+        padding: 12px 12px;
+      }
+      .signal-name { font-size: 14px; }
+      .signal-detail { font-size: 12px; }
+      .suggested-action {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      /* 规则说明 */
+      .rules-section h3 { font-size: 14px; }
+      .rules-section li {
+        font-size: 13px;
+        line-height: 1.8;
+      }
+      .rules-section code {
+        font-size: 11px;
+        min-width: 36px;
+        padding: 2px 6px;
+      }
+
+      /* 免责条款 */
+      .disclaimer {
+        padding: 12px 8px;
+        font-size: 11px;
+      }
+    }
+
+    /* 超小屏 (<=380px) */
+    @media (max-width: 380px) {
+      .header h1 { font-size: 18px; }
+      .total-assets-box .value { font-size: 26px; }
+      .breakdown-item {
+        flex: 1 1 100%;
+      }
+      #trendChart { height: 240px; }
+    }
   </style>
 </head>
 <body>
@@ -254,7 +379,7 @@
     <!-- 头部 -->
     <div class="header">
       <h1>Overseas Treasury</h1>
-      <div class="update-time">最后更新: 2026-08-09 21:09:20 CST</div>
+      <div class="update-time">最后更新: 2026-08-09 21:17:54 CST</div>
     </div>
 
     <!-- 第一板块：资产总额 -->
