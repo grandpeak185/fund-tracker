@@ -523,7 +523,7 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
           <div class="b-value">{len(funds)}</div>
         </div>
         <div class="breakdown-item">
-          <div class="b-label">相比263000</div>
+          <div class="b-label">相较期初数</div>
           <div class="b-value {change_class}">{change_arrow} {change_pct:+.2f}%</div>
         </div>
       </div>

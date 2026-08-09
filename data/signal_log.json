@@ -466,5 +466,88 @@
         "fund_name": "惠理高息股票基金"
       }
     ]
+  },
+  {
+    "date": "2026-08-09",
+    "timestamp": "2026-08-09T21:40:54.203707+08:00",
+    "nav_data": {
+      "value_partners": {
+        "nav": 12.58,
+        "date": "2026-08-06",
+        "source": "known_snapshot",
+        "isin": "HK0000288784"
+      },
+      "jpm_asia_pacific": {
+        "nav": 122.87,
+        "date": "2026-08-05",
+        "source": "known_snapshot",
+        "isin": "LU0784639295"
+      },
+      "amundi_income": {
+        "nav": 83.72,
+        "date": "06.08.2026",
+        "source": "primary",
+        "isin": "LU1883839398"
+      }
+    },
+    "portfolio": {
+      "fund_market_values": {
+        "value_partners": 59786.07707509882,
+        "jpm_asia_pacific": 90155.17622877569,
+        "amundi_income": 77883.05004646223
+      },
+      "cash_value": 94896,
+      "total_assets": 322720.30335033673,
+      "dynamic_weights": {
+        "value_partners": 0.1852566338542283,
+        "jpm_asia_pacific": 0.27936010003964823,
+        "amundi_income": 0.24133297235381693,
+        "cash": 0.29405029375230657
+      }
+    },
+    "summary": {
+      "overall_signal": "CAUTION",
+      "overall_detail": "检测到 2 个卖出信号（无强信号），建议关注但暂不急操作",
+      "sell_count": 2,
+      "buy_count": 0,
+      "hold_count": 0,
+      "strong_sell_count": 0,
+      "strong_buy_count": 0
+    },
+    "signals": [
+      {
+        "rule": "S-01",
+        "name": "止盈信号（中）",
+        "detail": "累计收益率 24.3% 触及止盈区间 [15%, 25%]，可考虑分批减仓",
+        "action": "sell",
+        "strength": "medium",
+        "score": 30,
+        "suggested_action": {
+          "type": "redeem",
+          "fund": "惠理高息股票基金",
+          "current_value": 59786.08,
+          "redeem_amount": 5689.02,
+          "description": "建议分批赎回 惠理高息股票基金 约 $5,689，逐步向目标仓位 15% 靠拢"
+        },
+        "fund_id": "value_partners",
+        "fund_name": "惠理高息股票基金"
+      },
+      {
+        "rule": "S-04",
+        "name": "仓位超配",
+        "detail": "惠理高息股票基金 当前权重 18.5% 超出目标 15% 达 3.5%，建议再平衡减仓约 $11,378",
+        "action": "sell",
+        "strength": "medium",
+        "score": 20,
+        "suggested_action": {
+          "type": "rebalance_sell",
+          "fund": "惠理高息股票基金",
+          "amount": 11378.03,
+          "description": "再平衡: 赎回 惠理高息股票基金 约 $11,378，使权重回归 15%"
+        },
+        "fund_id": "value_partners",
+        "fund_name": "惠理高息股票基金"
+      }
+    ]
   }
 ]
