@@ -368,6 +368,174 @@
       font-family: "SF Mono", "Fira Code", monospace;
     }
 
+    /* 可部署现金概览 */
+    .deploy-cash-box {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .deploy-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+    }
+    .deploy-row.highlight {
+      border-top: 2px dashed #bae6fd;
+      margin-top: 4px;
+      padding-top: 10px;
+    }
+    .deploy-row.highlight .deploy-label {
+      color: #0c4a6e;
+      font-weight: 700;
+    }
+    .deploy-row.highlight .deploy-value {
+      color: #0369a1;
+      font-weight: 800;
+      font-size: 20px;
+    }
+    .deploy-label {
+      font-size: 14px;
+      color: #475569;
+    }
+    .deploy-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      font-variant-numeric: tabular-nums;
+    }
+    .geo-summary {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 14px;
+      padding: 8px 12px;
+      background: #f8fafc;
+      border-radius: 6px;
+    }
+
+    /* 推荐基金卡片 */
+    .rec-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .rec-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #f0fdf4 0%, #fff 100%);
+      border-left: 4px solid #059669;
+      transition: box-shadow 0.2s;
+    }
+    .rec-card:hover {
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .rec-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .rec-rank {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #059669;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .rec-fund-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+      flex: 1;
+      min-width: 0;
+    }
+    .rec-amount {
+      font-size: 15px;
+      font-weight: 700;
+      color: #059669;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .rec-card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .geo-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .isin-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #64748b;
+      font-size: 11px;
+      font-family: "SF Mono", "Fira Code", monospace;
+    }
+    .alloc-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .rec-reasons {
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+    }
+    .reasons-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #059669;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .reasons-text {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.7;
+    }
+
+    /* 基金池折叠名单 */
+    .pool-collapse {
+      margin-top: 16px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 12px;
+    }
+    .pool-collapse summary {
+      cursor: pointer;
+      font-size: 13px;
+      color: #64748b;
+      padding: 6px 0;
+      user-select: none;
+    }
+    .pool-collapse summary:hover {
+      color: #2c5282;
+    }
+    .pool-full-list {
+      padding-top: 10px;
+    }
+
     /* 规则说明 */
     .rules-section h3 {
       font-size: 15px; margin: 16px 0 8px; color: #2c5282;
@@ -447,6 +615,19 @@
       .watchlist-desc { font-size: 12px; }
       .watchlist-item { font-size: 12px; padding: 4px 10px; }
       .type-badge { font-size: 11px; }
+      .deploy-cash-box { padding: 12px 14px; }
+      .deploy-label { font-size: 13px; }
+      .deploy-value { font-size: 14px; }
+      .deploy-row.highlight .deploy-value { font-size: 18px; }
+      .geo-summary { font-size: 12px; padding: 6px 10px; }
+      .rec-card { padding: 12px 14px; }
+      .rec-rank { width: 24px; height: 24px; font-size: 12px; }
+      .rec-fund-name { font-size: 14px; }
+      .rec-amount { font-size: 14px; }
+      .geo-badge, .alloc-badge { font-size: 11px; padding: 2px 8px; }
+      .isin-badge { font-size: 10px; padding: 2px 8px; }
+      .reasons-text { font-size: 12px; }
+      .pool-collapse summary { font-size: 12px; }
 
       /* 规则说明 */
       .rules-section h3 { font-size: 14px; }
@@ -470,7 +651,7 @@
     <!-- 头部 -->
     <div class="header">
       <h1>Overseas Treasury</h1>
-      <div class="update-time">最后更新: 2026-08-10 14:15:42 CST</div>
+      <div class="update-time">最后更新: 2026-08-10 14:36:38 CST</div>
     </div>
 
     <!-- 第一板块：资产总额 -->
@@ -478,13 +659,13 @@
       <h2>资产总额</h2>
       <div class="total-assets-box">
         <span class="label">资产总额</span>
-        <span class="value">$322,720</span>
+        <span class="value">$322,664</span>
         <span class="currency">USD</span>
       </div>
       <div class="total-breakdown">
         <div class="breakdown-item">
           <div class="b-label">基金市值合计</div>
-          <div class="b-value">$227,824</div>
+          <div class="b-value">$227,768</div>
         </div>
         <div class="breakdown-item">
           <div class="b-label">现金和存款</div>
@@ -496,7 +677,7 @@
         </div>
         <div class="breakdown-item">
           <div class="b-label">相较期初数</div>
-          <div class="b-value up">↑ +22.71%</div>
+          <div class="b-value up">↑ +22.69%</div>
         </div>
       </div>
     </div>
@@ -536,10 +717,10 @@
         </tr>
         <tr>
           <td><strong>东方汇理收益机遇基金</strong><br><span class="sub">A2 USD (C) Acc | ISIN: LU1883839398</span></td>
-          <td class="mono">2026-08-06</td>
-          <td class="mono">$83.72</td>
-          <td class="mono">$77,883</td>
-          <td class="mono pos">+11.14%</td>
+          <td class="mono">2026-08-03</td>
+          <td class="mono">$83.66</td>
+          <td class="mono">$77,827</td>
+          <td class="mono pos">+11.06%</td>
           <td><span class="badge">24.1%</span></td>
         </tr>
         <tr class="cash-row">
@@ -612,18 +793,18 @@
                 
       <div class="suggested-action">
         <span class="action-label">⚡ 建议操作</span>
-        <span class="action-desc">建议赎回 惠理高息股票基金 约 $11,378，将仓位从 18.5% 减至 15%（止盈信号触发）</span>
+        <span class="action-desc">建议赎回 惠理高息股票基金 约 $11,386，将仓位从 18.5% 减至 15%（止盈信号触发）</span>
       </div>
               </div>
               <div class="rec-item">
                 <span class="strength-tag medium">中</span>
                 <span class="signal-tag sell">S-04</span>
                 <span class="rec-name">仓位超配</span>
-                <p class="rec-detail">惠理高息股票基金 当前权重 18.5% 超出目标 15% 达 3.5%，建议再平衡减仓约 $11,378</p>
+                <p class="rec-detail">惠理高息股票基金 当前权重 18.5% 超出目标 15% 达 3.5%，建议再平衡减仓约 $11,386</p>
                 
       <div class="suggested-action">
         <span class="action-label">⚡ 建议操作</span>
-        <span class="action-desc">再平衡: 赎回 惠理高息股票基金 约 $11,378，将仓位从 18.5% 减至 15%</span>
+        <span class="action-desc">再平衡: 赎回 惠理高息股票基金 约 $11,386，将仓位从 18.5% 减至 15%</span>
       </div>
               </div>
               <div class="rec-item">
@@ -634,7 +815,7 @@
                 
       <div class="suggested-action">
         <span class="action-label">⚡ 建议操作</span>
-        <span class="action-desc">建议分批赎回 惠理高息股票基金 约 $5,689，逐步将仓位从 18.5% 向目标 15% 靠拢（价格处于历史高位预警触发）</span>
+        <span class="action-desc">建议分批赎回 惠理高息股票基金 约 $5,693，逐步将仓位从 18.5% 向目标 15% 靠拢（价格处于历史高位预警触发）</span>
       </div>
               </div></div>
         </div>
@@ -693,7 +874,7 @@
                 
       <div class="suggested-action">
         <span class="action-label">⚡ 建议操作</span>
-        <span class="action-desc">建议分批赎回 JPM亚太入息基金 约 $4,738，逐步将仓位从 27.9% 向目标 25% 靠拢（价格处于历史高位预警触发）</span>
+        <span class="action-desc">建议分批赎回 JPM亚太入息基金 约 $4,745，逐步将仓位从 27.9% 向目标 25% 靠拢（价格处于历史高位预警触发）</span>
       </div>
               </div></div>
         </div>
@@ -752,7 +933,7 @@
                 
       <div class="suggested-action">
         <span class="action-label">⚡ 建议操作</span>
-        <span class="action-desc">建议赎回 东方汇理收益机遇基金 约 $15,577，获利了结约20%仓位（当前仓位 24.1% 虽低于目标 25%，但因止盈信号触发减仓）</span>
+        <span class="action-desc">建议赎回 东方汇理收益机遇基金 约 $15,565，获利了结约20%仓位（当前仓位 24.1% 虽低于目标 25%，但因止盈信号触发减仓）</span>
       </div>
               </div>
               <div class="rec-item">
@@ -763,7 +944,7 @@
                 
       <div class="suggested-action">
         <span class="action-label">⚡ 建议操作</span>
-        <span class="action-desc">建议赎回 东方汇理收益机遇基金 约 $15,577，获利了结约20%仓位（当前仓位 24.1% 虽低于目标 25%，但因价格处于历史极端高位触发减仓）</span>
+        <span class="action-desc">建议赎回 东方汇理收益机遇基金 约 $15,565，获利了结约20%仓位（当前仓位 24.1% 虽低于目标 25%，但因价格处于历史极端高位触发减仓）</span>
       </div>
               </div></div>
         </div>
@@ -773,8 +954,81 @@
     <!-- 第四板块：潜力基金分析 -->
     <div class="card">
       <h2>潜力基金分析</h2>
-      <div class="potential-group"><h3>基金池观察名单</h3>
-<p class="watchlist-desc">以下基金池中的基金暂未持有，如需申购请告知，将纳入净值追踪并生成量化信号。</p>
+      
+      <div class="deploy-cash-box">
+        <div class="deploy-row">
+          <span class="deploy-label">现金和存款</span>
+          <span class="deploy-value">$94,896</span>
+        </div>
+        <div class="deploy-row">
+          <span class="deploy-label">现金目标保留（20%）</span>
+          <span class="deploy-value">$64,533</span>
+        </div>
+        <div class="deploy-row highlight">
+          <span class="deploy-label">可部署资金</span>
+          <span class="deploy-value">$30,363</span>
+        </div>
+      </div>
+<p class="geo-summary">当前组合地理分布：亚太 27.9%、环球 24.1%、亚洲 18.5%</p>
+<div class="rec-list">
+
+        <div class="rec-card">
+          <div class="rec-card-header">
+            <span class="rec-rank">#1</span>
+            <span class="rec-fund-name">摩根国际债券基金</span>
+            <span class="rec-amount">建议申购 $15,182</span>
+          </div>
+          <div class="rec-card-tags">
+            <span class="type-badge">债券型</span>
+            <span class="geo-badge">国际</span>
+            <span class="isin-badge">ISIN: HK0000055654</span>
+            <span class="alloc-badge">资金占比 50%</span>
+          </div>
+          <div class="rec-reasons">
+            <span class="reasons-label">推荐理由</span>
+            <p class="reasons-text">填补国际区域配置空白（当前组合未覆盖国际市场）；债券配置不足（当前约14%），增厚固收防御；环球债券分散单一市场风险</p>
+          </div>
+        </div>
+
+        <div class="rec-card">
+          <div class="rec-card-header">
+            <span class="rec-rank">#2</span>
+            <span class="rec-fund-name">东方汇理环球债券基金</span>
+            <span class="rec-amount">建议申购 $9,109</span>
+          </div>
+          <div class="rec-card-tags">
+            <span class="type-badge">债券型</span>
+            <span class="geo-badge">环球</span>
+            <span class="isin-badge">ISIN: LU0210817283</span>
+            <span class="alloc-badge">资金占比 30%</span>
+          </div>
+          <div class="rec-reasons">
+            <span class="reasons-label">推荐理由</span>
+            <p class="reasons-text">债券配置不足（当前约14%），增厚固收防御；环球债券分散单一市场风险</p>
+          </div>
+        </div>
+
+        <div class="rec-card">
+          <div class="rec-card-header">
+            <span class="rec-rank">#3</span>
+            <span class="rec-fund-name">摩根环球企业债券基金</span>
+            <span class="rec-amount">建议申购 $6,073</span>
+          </div>
+          <div class="rec-card-tags">
+            <span class="type-badge">债券型</span>
+            <span class="geo-badge">环球</span>
+            <span class="isin-badge">ISIN: LU0503867672</span>
+            <span class="alloc-badge">资金占比 20%</span>
+          </div>
+          <div class="rec-reasons">
+            <span class="reasons-label">推荐理由</span>
+            <p class="reasons-text">债券配置不足（当前约14%），增厚固收防御；环球债券分散单一市场风险</p>
+          </div>
+        </div>
+</div>
+<details class="pool-collapse">
+<summary>查看基金池完整名单（14只未持有基金）</summary>
+<div class="pool-full-list">
 <div class="watchlist-type"><span class="type-badge">股票型</span>
 <span class="watchlist-item">摩根亚洲股票高息基金(卢森堡)<span class="watchlist-isin">LU0117844026</span></span>
 <span class="watchlist-item">摩根亚洲股票高息基金(香港)<span class="watchlist-isin">HK0000964608</span></span>
@@ -796,6 +1050,7 @@
 <span class="watchlist-item">富兰克林西方资产亚洲机会基金<span class="watchlist-isin">IE00B2Q1FD82</span></span>
 </div>
 </div>
+</details>
     </div>
 
     <!-- 第五板块：量化规则说明 -->

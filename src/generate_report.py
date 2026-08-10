@@ -304,72 +304,88 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
     fund_analysis_html = '\n'.join(fund_analysis_blocks)
 
     # ---- 潜力基金分析 ----
-    # 排除组合级信号（如B-04现金过多，没有fund_id），只保留基金级买入信号
-    fund_buy_signals = [s for s in signal_result["buy_signals"] if s.get("fund_id")]
-
-    # 基金池中非持有的基金
-    held_isins = {f["isin"] for f in funds}
-    pool_funds = config.get("ncb_fund_pool", [])
-    watchlist_funds = [pf for pf in pool_funds if pf["isin"] not in held_isins]
+    # 基于可部署现金和组合分布缺口，直接给出基金池申购建议
+    pool_recs = signal_result.get("pool_recommendations", {})
+    deployable_cash = pool_recs.get("deployable_cash", 0)
+    recs = pool_recs.get("recommendations", [])
+    rec_note = pool_recs.get("note", "")
+    geo_summary = pool_recs.get("portfolio_geo_summary", "")
+    cash_target_pct = cash["target_weight"] * 100
 
     potential_items = []
 
-    # 第一部分：持有基金的买入信号
-    if fund_buy_signals:
-        potential_items.append('<div class="potential-group"><h3>持有基金申购信号</h3>')
-        for sig in fund_buy_signals:
-            strength_badge = {
-                "strong": '<span class="strength-tag strong">强</span>',
-                "medium": '<span class="strength-tag medium">中</span>',
-                "weak": '<span class="strength-tag weak">弱</span>',
-            }.get(sig.get("strength", "weak"), "")
+    # 可部署现金概览
+    potential_items.append(f"""
+      <div class="deploy-cash-box">
+        <div class="deploy-row">
+          <span class="deploy-label">现金和存款</span>
+          <span class="deploy-value">${cash_value:,.0f}</span>
+        </div>
+        <div class="deploy-row">
+          <span class="deploy-label">现金目标保留（{cash_target_pct:.0f}%）</span>
+          <span class="deploy-value">${total_assets * cash['target_weight']:,.0f}</span>
+        </div>
+        <div class="deploy-row highlight">
+          <span class="deploy-label">可部署资金</span>
+          <span class="deploy-value">${deployable_cash:,.0f}</span>
+        </div>
+      </div>""")
+
+    if geo_summary:
+        potential_items.append(f'<p class="geo-summary">当前组合地理分布：{geo_summary}</p>')
+
+    if recs:
+        potential_items.append('<div class="rec-list">')
+        for i, rec in enumerate(recs, 1):
             potential_items.append(f"""
-        <div class="signal-item buy">
-          {strength_badge}
-          <span class="signal-tag buy">{sig['rule']}</span>
-          <span class="signal-name">{sig['fund_name']} - {sig['name']}</span>
-          <p class="signal-detail">{sig['detail']}</p>
-          {_build_suggested_action_html(sig.get('suggested_action'))}
+        <div class="rec-card">
+          <div class="rec-card-header">
+            <span class="rec-rank">#{i}</span>
+            <span class="rec-fund-name">{rec['name_cn']}</span>
+            <span class="rec-amount">建议申购 ${rec['amount']:,.0f}</span>
+          </div>
+          <div class="rec-card-tags">
+            <span class="type-badge">{rec['type']}</span>
+            <span class="geo-badge">{rec['geography']}</span>
+            <span class="isin-badge">ISIN: {rec['isin']}</span>
+            <span class="alloc-badge">资金占比 {rec['allocation_pct']*100:.0f}%</span>
+          </div>
+          <div class="rec-reasons">
+            <span class="reasons-label">推荐理由</span>
+            <p class="reasons-text">{rec['reasons']}</p>
+          </div>
         </div>""")
         potential_items.append('</div>')
 
-    # 第二部分：基金池观察名单（非持有基金）
-    if watchlist_funds:
-        potential_items.append('<div class="potential-group"><h3>基金池观察名单</h3>')
-        potential_items.append('<p class="watchlist-desc">以下基金池中的基金暂未持有，如需申购请告知，将纳入净值追踪并生成量化信号。</p>')
-        # 按类型分组
-        type_order = ["股票型", "股债混合", "多元资产", "混合型", "债券型"]
-        type_labels = {
-            "股票型": "股票型", "股债混合": "股债混合", "多元资产": "多元资产",
-            "混合型": "混合型", "债券型": "债券型",
-        }
-        funds_by_type = {}
-        for pf in watchlist_funds:
-            t = pf.get("type", "其他")
-            if t not in funds_by_type:
-                funds_by_type[t] = []
-            funds_by_type[t].append(pf)
-
-        for ft in type_order:
-            if ft not in funds_by_type:
-                continue
-            potential_items.append(f'<div class="watchlist-type"><span class="type-badge">{type_labels.get(ft, ft)}</span>')
-            for pf in funds_by_type[ft]:
-                potential_items.append(f'<span class="watchlist-item">{pf["name_cn"]}<span class="watchlist-isin">{pf["isin"]}</span></span>')
+        # 基金池完整名单（折叠参考）
+        held_isins = {f["isin"] for f in funds}
+        watchlist_funds = [pf for pf in config.get("ncb_fund_pool", []) if pf["isin"] not in held_isins]
+        if watchlist_funds:
+            potential_items.append('<details class="pool-collapse">')
+            potential_items.append(f'<summary>查看基金池完整名单（{len(watchlist_funds)}只未持有基金）</summary>')
+            potential_items.append('<div class="pool-full-list">')
+            type_order = ["股票型", "股债混合", "多元资产", "混合型", "债券型"]
+            funds_by_type = {}
+            for pf in watchlist_funds:
+                t = pf.get("type", "其他")
+                if t not in funds_by_type:
+                    funds_by_type[t] = []
+                funds_by_type[t].append(pf)
+            for ft in type_order + [t for t in funds_by_type if t not in type_order]:
+                if ft not in funds_by_type:
+                    continue
+                potential_items.append(f'<div class="watchlist-type"><span class="type-badge">{ft}</span>')
+                for pf in funds_by_type[ft]:
+                    potential_items.append(f'<span class="watchlist-item">{pf["name_cn"]}<span class="watchlist-isin">{pf["isin"]}</span></span>')
+                potential_items.append('</div>')
             potential_items.append('</div>')
-
-        remaining = [ft for ft in funds_by_type if ft not in type_order]
-        for ft in remaining:
-            potential_items.append(f'<div class="watchlist-type"><span class="type-badge">{ft}</span>')
-            for pf in funds_by_type[ft]:
-                potential_items.append(f'<span class="watchlist-item">{pf["name_cn"]}<span class="watchlist-isin">{pf["isin"]}</span></span>')
-            potential_items.append('</div>')
-        potential_items.append('</div>')
-
-    if potential_items:
-        potential_html = '\n'.join(potential_items)
+            potential_items.append('</details>')
+    elif rec_note:
+        potential_items.append(f'<div class="no-signal">{rec_note}</div>')
     else:
-        potential_html = '<div class="no-signal">暂无推荐基金</div>'
+        potential_items.append('<div class="no-signal">暂无推荐基金</div>')
+
+    potential_html = '\n'.join(potential_items)
 
     # ---- 图表配置 JSON ----
     chart_configs_json = json.dumps(chart_configs, ensure_ascii=False)
@@ -744,6 +760,174 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
       font-family: "SF Mono", "Fira Code", monospace;
     }}
 
+    /* 可部署现金概览 */
+    .deploy-cash-box {{
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }}
+    .deploy-row {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+    }}
+    .deploy-row.highlight {{
+      border-top: 2px dashed #bae6fd;
+      margin-top: 4px;
+      padding-top: 10px;
+    }}
+    .deploy-row.highlight .deploy-label {{
+      color: #0c4a6e;
+      font-weight: 700;
+    }}
+    .deploy-row.highlight .deploy-value {{
+      color: #0369a1;
+      font-weight: 800;
+      font-size: 20px;
+    }}
+    .deploy-label {{
+      font-size: 14px;
+      color: #475569;
+    }}
+    .deploy-value {{
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      font-variant-numeric: tabular-nums;
+    }}
+    .geo-summary {{
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 14px;
+      padding: 8px 12px;
+      background: #f8fafc;
+      border-radius: 6px;
+    }}
+
+    /* 推荐基金卡片 */
+    .rec-list {{
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }}
+    .rec-card {{
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #f0fdf4 0%, #fff 100%);
+      border-left: 4px solid #059669;
+      transition: box-shadow 0.2s;
+    }}
+    .rec-card:hover {{
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }}
+    .rec-card-header {{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }}
+    .rec-rank {{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #059669;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }}
+    .rec-fund-name {{
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+      flex: 1;
+      min-width: 0;
+    }}
+    .rec-amount {{
+      font-size: 15px;
+      font-weight: 700;
+      color: #059669;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }}
+    .rec-card-tags {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }}
+    .geo-badge {{
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 12px;
+      font-weight: 600;
+    }}
+    .isin-badge {{
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #64748b;
+      font-size: 11px;
+      font-family: "SF Mono", "Fira Code", monospace;
+    }}
+    .alloc-badge {{
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 12px;
+      font-weight: 600;
+    }}
+    .rec-reasons {{
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+    }}
+    .reasons-label {{
+      font-size: 12px;
+      font-weight: 700;
+      color: #059669;
+      display: block;
+      margin-bottom: 4px;
+    }}
+    .reasons-text {{
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.7;
+    }}
+
+    /* 基金池折叠名单 */
+    .pool-collapse {{
+      margin-top: 16px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 12px;
+    }}
+    .pool-collapse summary {{
+      cursor: pointer;
+      font-size: 13px;
+      color: #64748b;
+      padding: 6px 0;
+      user-select: none;
+    }}
+    .pool-collapse summary:hover {{
+      color: #2c5282;
+    }}
+    .pool-full-list {{
+      padding-top: 10px;
+    }}
+
     /* 规则说明 */
     .rules-section h3 {{
       font-size: 15px; margin: 16px 0 8px; color: #2c5282;
@@ -823,6 +1007,19 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
       .watchlist-desc {{ font-size: 12px; }}
       .watchlist-item {{ font-size: 12px; padding: 4px 10px; }}
       .type-badge {{ font-size: 11px; }}
+      .deploy-cash-box {{ padding: 12px 14px; }}
+      .deploy-label {{ font-size: 13px; }}
+      .deploy-value {{ font-size: 14px; }}
+      .deploy-row.highlight .deploy-value {{ font-size: 18px; }}
+      .geo-summary {{ font-size: 12px; padding: 6px 10px; }}
+      .rec-card {{ padding: 12px 14px; }}
+      .rec-rank {{ width: 24px; height: 24px; font-size: 12px; }}
+      .rec-fund-name {{ font-size: 14px; }}
+      .rec-amount {{ font-size: 14px; }}
+      .geo-badge, .alloc-badge {{ font-size: 11px; padding: 2px 8px; }}
+      .isin-badge {{ font-size: 10px; padding: 2px 8px; }}
+      .reasons-text {{ font-size: 12px; }}
+      .pool-collapse summary {{ font-size: 12px; }}
 
       /* 规则说明 */
       .rules-section h3 {{ font-size: 14px; }}

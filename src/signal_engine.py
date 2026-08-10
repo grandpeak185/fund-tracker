@@ -520,6 +520,7 @@ class SignalEngine:
                 s["detail"] = "[熔断保护] " + s["detail"]
 
         summary = self._build_signal_summary(sell_signals, buy_signals, hold_signals)
+        pool_recommendations = self.generate_pool_recommendations()
 
         return {
             "signals": all_signals,
@@ -528,7 +529,137 @@ class SignalEngine:
             "hold_signals": hold_signals,
             "summary": summary,
             "percentile_details": percentile_details,
+            "pool_recommendations": pool_recommendations,
             "generated_at": datetime.now(CST).isoformat(),
+        }
+
+    def generate_pool_recommendations(self):
+        """基于组合现状和现金水平，从基金池中推荐申购基金
+        逻辑：
+        1. 计算可部署现金（现金超出目标的部分，保留一定缓冲）
+        2. 分析当前组合的地理分布和资产类型分布
+        3. 找出组合缺口（地理+类型）
+        4. 从基金池中匹配填补缺口的非持有基金
+        5. 分配可部署资金并给出推荐理由
+        """
+        cash_weight = self.dynamic_weights.get("cash", 0)
+        cash_target = self.cash["target_weight"]
+
+        # 可部署现金 = 当前现金 - 目标现金（保留缓冲，不低于0）
+        deployable_cash = max(self.cash_value - self.total_value * cash_target, 0)
+        if deployable_cash < 5000:
+            return {
+                "deployable_cash": round(deployable_cash, 2),
+                "recommendations": [],
+                "note": f"现金和存款 ${self.cash_value:,.0f}（占比 {cash_weight*100:.1f}%）接近目标 {cash_target*100:.0f}%，暂无富余资金配置基金池",
+            }
+
+        # 1. 分析当前组合的地理分布
+        held_isins = {f["isin"] for f in self.funds}
+        geo_exposure = {}
+        for fund in self.funds:
+            # 从基金池查找地理信息
+            pool_entry = next((pf for pf in self.config.get("ncb_fund_pool", []) if pf["isin"] == fund["isin"]), {})
+            geo = pool_entry.get("geography", "其他")
+            weight = self.dynamic_weights.get(fund["id"], 0)
+            if geo not in geo_exposure:
+                geo_exposure[geo] = 0
+            geo_exposure[geo] += weight
+
+        # 2. 分析当前组合的资产类型分布
+        type_exposure = {}
+        for fund in self.funds:
+            pool_entry = next((pf for pf in self.config.get("ncb_fund_pool", []) if pf["isin"] == fund["isin"]), {})
+            ft = pool_entry.get("type", "其他")
+            weight = self.dynamic_weights.get(fund["id"], 0)
+            if ft not in type_exposure:
+                type_exposure[ft] = 0
+            type_exposure[ft] += weight
+
+        # 3. 找出组合缺口
+        # 地理缺口：当前未配置的地理区域
+        all_geos = ["亚洲", "亚太", "欧洲", "美国", "日本", "环球", "国际", "香港"]
+        covered_geos = set(geo_exposure.keys())
+        missing_geos = [g for g in all_geos if g not in covered_geos]
+
+        # 类型缺口：债券型配置不足
+        bond_weight = type_exposure.get("债券型", 0) + type_exposure.get("股债混合", 0) * 0.5
+        equity_weight = type_exposure.get("股票型", 0) + type_exposure.get("多元资产", 0) * 0.6
+
+        # 4. 从基金池中匹配推荐
+        pool_funds = [pf for pf in self.config.get("ncb_fund_pool", []) if pf["isin"] not in held_isins]
+
+        scored_funds = []
+        for pf in pool_funds:
+            score = 0
+            reasons = []
+            geo = pf.get("geography", "其他")
+            ft = pf.get("type", "其他")
+
+            # 地理多元化加分
+            if geo in missing_geos:
+                score += 30
+                reasons.append(f"填补{geo}区域配置空白（当前组合未覆盖{geo}市场）")
+            elif geo == "亚洲" and geo_exposure.get("亚洲", 0) + geo_exposure.get("亚太", 0) > 0.35:
+                score -= 15
+                reasons.append(f"组合已重仓{geo}市场，多元化增益有限")
+
+            # 类型多元化加分
+            if ft == "债券型" and bond_weight < 0.25:
+                score += 25
+                reasons.append(f"债券配置不足（当前约{bond_weight*100:.0f}%），增厚固收防御")
+            elif ft == "股票型" and equity_weight > 0.50:
+                score -= 10
+                reasons.append("股票仓位已较高，继续加仓股票型风险集中")
+
+            # 环球分散加分
+            if geo in ("环球", "国际") and ft in ("股票型", "债券型"):
+                score += 15
+                reasons.append(f"环球{ft.replace('型','')}分散单一市场风险")
+
+            if score > 0:
+                scored_funds.append({"fund": pf, "score": score, "reasons": reasons, "geo": geo, "type": ft})
+
+        # 5. 按得分排序，取前3名分配资金
+        scored_funds.sort(key=lambda x: x["score"], reverse=True)
+        top_picks = scored_funds[:3]
+
+        if not top_picks:
+            return {
+                "deployable_cash": round(deployable_cash, 2),
+                "recommendations": [],
+                "note": "当前组合地理和类型分布较为均衡，基金池中暂无明显的多元化配置缺口",
+            }
+
+        # 分配资金：第一名50%，第二名30%，第三名20%
+        allocations = [0.5, 0.3, 0.2] if len(top_picks) >= 3 else [0.6, 0.4] if len(top_picks) == 2 else [1.0]
+
+        recommendations = []
+        for i, pick in enumerate(top_picks):
+            pf = pick["fund"]
+            alloc_pct = allocations[i]
+            amount = deployable_cash * alloc_pct
+            reasons_text = "；".join(pick["reasons"])
+            recommendations.append({
+                "name_cn": pf["name_cn"],
+                "isin": pf["isin"],
+                "type": pf.get("type", ""),
+                "geography": pf.get("geography", ""),
+                "amount": round(amount, 2),
+                "allocation_pct": alloc_pct,
+                "reasons": reasons_text,
+            })
+
+        geo_summary_parts = []
+        for geo, w in sorted(geo_exposure.items(), key=lambda x: -x[1]):
+            geo_summary_parts.append(f"{geo} {w*100:.1f}%")
+        geo_summary = "、".join(geo_summary_parts)
+
+        return {
+            "deployable_cash": round(deployable_cash, 2),
+            "recommendations": recommendations,
+            "portfolio_geo_summary": geo_summary,
+            "note": "",
         }
 
     def _build_signal_summary(self, sell_signals, buy_signals, hold_signals):
