@@ -157,18 +157,21 @@ class SignalEngine:
                 "rule": "B-06", "name": "历史极端低位（强）",
                 "detail": f"{fund['name_cn']} 当前价格分位数 {percentile:.1f}%（低于{pct_extreme_low}%极端线），处于历史极低位置，中长期布局良机",
                 "action": "buy", "strength": "strong", "score": 35,
-                "suggested_action": self._build_buy_suggestion(fund_id),
+                "suggested_action": self._build_buy_suggestion(fund_id, "价格处于历史极端低位，中长期布局良机"),
             })
         elif percentile <= pct_low:
             signals.append({
                 "rule": "B-06", "name": "历史低位机会",
                 "detail": f"{fund['name_cn']} 当前价格分位数 {percentile:.1f}%（低于{pct_low}%机会线），处于历史低位区间，可考虑逢低布局",
                 "action": "buy", "strength": "medium", "score": 20,
+                "suggested_action": self._build_buy_suggestion(fund_id, "价格处于历史低位区间，可考虑逢低布局"),
             })
         return signals
 
-    def _build_buy_suggestion(self, fund_id):
-        """构建买入建议 - 区分仓位不足和已达标两种场景"""
+    def _build_buy_suggestion(self, fund_id, reason=""):
+        """构建买入建议 - 区分仓位不足/已达标 × 多种信号原因
+        reason: 触发原因，如 "价格处于历史极端低位"、"价格处于历史低位"、"趋势确立（金叉）"、"回撤企稳"
+        """
         fund = next((f for f in self.funds if f["id"] == fund_id), None)
         if not fund:
             return None
@@ -177,13 +180,14 @@ class SignalEngine:
         current_weight = self.dynamic_weights.get(fund_id, 0)
         target_weight_pct = fund["target_weight"] * 100
         is_underweight = current_value < target_value
+        reason = reason or "信号触发"
 
         if is_underweight:
             buy_amount = target_value - current_value
-            desc = f"建议申购 {fund['name_cn']} 约 ${buy_amount:,.0f}，将仓位从 {current_weight*100:.1f}% 提升至 {target_weight_pct:.0f}%（价格处于历史低位，逢低布局）"
+            desc = f"建议申购 {fund['name_cn']} 约 ${buy_amount:,.0f}，将仓位从 {current_weight*100:.1f}% 提升至 {target_weight_pct:.0f}%（{reason}）"
         else:
             buy_amount = self.cash_value * 0.1
-            desc = f"建议申购 {fund['name_cn']} 约 ${buy_amount:,.0f}，把握历史低位布局机会（当前仓位 {current_weight*100:.1f}% 已达目标 {target_weight_pct:.0f}%，可用闲置现金小幅加仓）"
+            desc = f"建议申购 {fund['name_cn']} 约 ${buy_amount:,.0f}，用闲置现金小幅加仓（当前仓位 {current_weight*100:.1f}% 已达目标 {target_weight_pct:.0f}%，但{reason}）"
         return {
             "type": "buy", "fund": fund["name_cn"],
             "amount": round(buy_amount, 2),
@@ -203,7 +207,7 @@ class SignalEngine:
             result["ma60"] = sum(nav_history[-ma_long:]) / ma_long
         return result
 
-    def detect_cross(self, nav_history):
+    def detect_cross(self, fund_id, nav_history):
         signals = []
         if len(nav_history) < self.rules["ma_mid"] + 1:
             return signals
@@ -218,6 +222,7 @@ class SignalEngine:
                 "rule": "B-02", "name": "趋势确立（金叉）",
                 "detail": f"MA5({current_ma5:.4f})上穿MA20({current_ma20:.4f})，趋势向上确立",
                 "action": "buy", "strength": "medium", "score": 25,
+                "suggested_action": self._build_buy_suggestion(fund_id, "趋势向上确立（MA5上穿MA20金叉）"),
             })
         if prev_ma5 >= prev_ma20 and current_ma5 < current_ma20:
             signals.append({
@@ -383,13 +388,41 @@ class SignalEngine:
 
         if cash_weight > high_threshold:
             excess_cash = self.cash_value - self.total_value * self.cash["target_weight"]
+
+            # 智能推荐：优先找仓位最低配的基金
+            underweight_funds = []
+            for fund in self.funds:
+                fid = fund["id"]
+                current_w = self.dynamic_weights.get(fid, 0)
+                deviation = current_w - fund["target_weight"]
+                if deviation < -self.rules["weight_deviation_threshold"]:
+                    shortfall = self.total_value * fund["target_weight"] - self.fund_market_values.get(fid, 0)
+                    underweight_funds.append({
+                        "name": fund["name_cn"],
+                        "shortfall": shortfall,
+                        "current_weight": current_w,
+                        "target_weight": fund["target_weight"],
+                    })
+            underweight_funds.sort(key=lambda x: x["shortfall"], reverse=True)
+
+            if underweight_funds:
+                top_fund = underweight_funds[0]
+                deploy_amount = min(excess_cash, top_fund["shortfall"])
+                desc = f"建议将约 ${deploy_amount:,.0f} 配置至 {top_fund['name']}（当前仓位 {top_fund['current_weight']*100:.1f}% 低于目标 {top_fund['target_weight']*100:.0f}%，优先补仓）"
+                if len(underweight_funds) > 1:
+                    others = "、".join(f["name"] for f in underweight_funds[1:])
+                    desc += f"；其余低配基金：{others}也可考虑"
+            else:
+                deploy_amount = excess_cash
+                desc = f"持有基金均已达标，建议将约 ${excess_cash:,.0f} 配置至基金池中的潜力基金或美元货币基金（年化约4%）"
+
             signals.append({
                 "rule": "B-04", "name": "现金仓位过高",
                 "detail": f"现金和存款占比 {cash_weight*100:.1f}% 超过阈值 {high_threshold*100:.0f}%，持有闲置现金约 ${self.cash_value:,.0f}，建议配置至低配基金或优质固收产品",
                 "action": "buy", "strength": "medium", "score": 20,
                 "suggested_action": {
-                    "type": "deploy_cash", "amount": round(excess_cash, 2),
-                    "description": f"建议将约 ${excess_cash:,.0f} 现金配置至低配基金或美元货币基金（年化约4%）",
+                    "type": "deploy_cash", "amount": round(deploy_amount, 2),
+                    "description": desc,
                 },
             })
         elif cash_weight < low_threshold:
@@ -419,6 +452,7 @@ class SignalEngine:
                             "rule": "B-03", "name": "回撤企稳买入",
                             "detail": f"{fund['name_cn']} 从高点回撤 {drawdown*100:.1f}%，近3日波动仅 {volatility*100:.2f}%，已企稳可考虑逢低布局",
                             "action": "buy", "strength": "medium", "score": 25,
+                            "suggested_action": self._build_buy_suggestion(fund_id, f"从高点回撤{drawdown*100:.1f}%后已企稳，波动率仅{volatility*100:.2f}%"),
                         })
 
         if len(nav_history) >= 6:
@@ -464,7 +498,7 @@ class SignalEngine:
 
             fund_signals = []
             fund_signals.extend(self.check_stop_profit_loss(fund_id, current_nav, cost_nav, percentile))
-            fund_signals.extend(self.detect_cross(fund_nav_history))
+            fund_signals.extend(self.detect_cross(fund_id, fund_nav_history))
             fund_signals.extend(self.check_weight_deviation(fund_id))
             fund_signals.extend(self.check_drawdown(fund_id, fund_nav_history))
             fund_signals.extend(self.check_price_position(fund_id, fund_nav_history, monthly_data))

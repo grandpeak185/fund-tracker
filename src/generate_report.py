@@ -304,9 +304,19 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
     fund_analysis_html = '\n'.join(fund_analysis_blocks)
 
     # ---- 潜力基金分析 ----
+    # 排除组合级信号（如B-04现金过多，没有fund_id），只保留基金级买入信号
     fund_buy_signals = [s for s in signal_result["buy_signals"] if s.get("fund_id")]
+
+    # 基金池中非持有的基金
+    held_isins = {f["isin"] for f in funds}
+    pool_funds = config.get("ncb_fund_pool", [])
+    watchlist_funds = [pf for pf in pool_funds if pf["isin"] not in held_isins]
+
+    potential_items = []
+
+    # 第一部分：持有基金的买入信号
     if fund_buy_signals:
-        potential_items = []
+        potential_items.append('<div class="potential-group"><h3>持有基金申购信号</h3>')
         for sig in fund_buy_signals:
             strength_badge = {
                 "strong": '<span class="strength-tag strong">强</span>',
@@ -321,6 +331,42 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
           <p class="signal-detail">{sig['detail']}</p>
           {_build_suggested_action_html(sig.get('suggested_action'))}
         </div>""")
+        potential_items.append('</div>')
+
+    # 第二部分：基金池观察名单（非持有基金）
+    if watchlist_funds:
+        potential_items.append('<div class="potential-group"><h3>基金池观察名单</h3>')
+        potential_items.append('<p class="watchlist-desc">以下基金池中的基金暂未持有，如需申购请告知，将纳入净值追踪并生成量化信号。</p>')
+        # 按类型分组
+        type_order = ["股票型", "股债混合", "多元资产", "混合型", "债券型"]
+        type_labels = {
+            "股票型": "股票型", "股债混合": "股债混合", "多元资产": "多元资产",
+            "混合型": "混合型", "债券型": "债券型",
+        }
+        funds_by_type = {}
+        for pf in watchlist_funds:
+            t = pf.get("type", "其他")
+            if t not in funds_by_type:
+                funds_by_type[t] = []
+            funds_by_type[t].append(pf)
+
+        for ft in type_order:
+            if ft not in funds_by_type:
+                continue
+            potential_items.append(f'<div class="watchlist-type"><span class="type-badge">{type_labels.get(ft, ft)}</span>')
+            for pf in funds_by_type[ft]:
+                potential_items.append(f'<span class="watchlist-item">{pf["name_cn"]}<span class="watchlist-isin">{pf["isin"]}</span></span>')
+            potential_items.append('</div>')
+
+        remaining = [ft for ft in funds_by_type if ft not in type_order]
+        for ft in remaining:
+            potential_items.append(f'<div class="watchlist-type"><span class="type-badge">{ft}</span>')
+            for pf in funds_by_type[ft]:
+                potential_items.append(f'<span class="watchlist-item">{pf["name_cn"]}<span class="watchlist-isin">{pf["isin"]}</span></span>')
+            potential_items.append('</div>')
+        potential_items.append('</div>')
+
+    if potential_items:
         potential_html = '\n'.join(potential_items)
     else:
         potential_html = '<div class="no-signal">暂无推荐基金</div>'
@@ -648,6 +694,56 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
     .suggested-action .action-desc {{ color: #1e293b; }}
     .no-signal {{ text-align: center; padding: 24px; color: #94a3b8; font-size: 14px; }}
 
+    /* 潜力基金分析 */
+    .potential-group {{
+      margin-bottom: 20px;
+    }}
+    .potential-group:last-child {{ margin-bottom: 0; }}
+    .potential-group h3 {{
+      font-size: 15px;
+      color: #2c5282;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }}
+    .watchlist-desc {{
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 12px;
+    }}
+    .watchlist-type {{
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }}
+    .type-badge {{
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }}
+    .watchlist-item {{
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      font-size: 13px;
+      color: #1e293b;
+      gap: 6px;
+    }}
+    .watchlist-isin {{
+      font-size: 10px;
+      color: #94a3b8;
+      font-family: "SF Mono", "Fira Code", monospace;
+    }}
+
     /* 规则说明 */
     .rules-section h3 {{
       font-size: 15px; margin: 16px 0 8px; color: #2c5282;
@@ -721,6 +817,12 @@ def generate_html(config, nav_data, signal_result, monthly_nav_history, portfoli
       .signal-item {{ padding: 12px 12px; }}
       .signal-name {{ font-size: 14px; }}
       .signal-detail {{ font-size: 12px; }}
+
+      /* 潜力基金分析 */
+      .potential-group h3 {{ font-size: 14px; }}
+      .watchlist-desc {{ font-size: 12px; }}
+      .watchlist-item {{ font-size: 12px; padding: 4px 10px; }}
+      .type-badge {{ font-size: 11px; }}
 
       /* 规则说明 */
       .rules-section h3 {{ font-size: 14px; }}

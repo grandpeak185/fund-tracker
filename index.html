@@ -318,6 +318,56 @@
     .suggested-action .action-desc { color: #1e293b; }
     .no-signal { text-align: center; padding: 24px; color: #94a3b8; font-size: 14px; }
 
+    /* 潜力基金分析 */
+    .potential-group {
+      margin-bottom: 20px;
+    }
+    .potential-group:last-child { margin-bottom: 0; }
+    .potential-group h3 {
+      font-size: 15px;
+      color: #2c5282;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .watchlist-desc {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+    .watchlist-type {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .type-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .watchlist-item {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      font-size: 13px;
+      color: #1e293b;
+      gap: 6px;
+    }
+    .watchlist-isin {
+      font-size: 10px;
+      color: #94a3b8;
+      font-family: "SF Mono", "Fira Code", monospace;
+    }
+
     /* 规则说明 */
     .rules-section h3 {
       font-size: 15px; margin: 16px 0 8px; color: #2c5282;
@@ -392,6 +442,12 @@
       .signal-name { font-size: 14px; }
       .signal-detail { font-size: 12px; }
 
+      /* 潜力基金分析 */
+      .potential-group h3 { font-size: 14px; }
+      .watchlist-desc { font-size: 12px; }
+      .watchlist-item { font-size: 12px; padding: 4px 10px; }
+      .type-badge { font-size: 11px; }
+
       /* 规则说明 */
       .rules-section h3 { font-size: 14px; }
       .rules-section li { font-size: 13px; line-height: 1.8; }
@@ -414,7 +470,7 @@
     <!-- 头部 -->
     <div class="header">
       <h1>Overseas Treasury</h1>
-      <div class="update-time">最后更新: 2026-08-10 14:07:58 CST</div>
+      <div class="update-time">最后更新: 2026-08-10 14:15:42 CST</div>
     </div>
 
     <!-- 第一板块：资产总额 -->
@@ -717,7 +773,29 @@
     <!-- 第四板块：潜力基金分析 -->
     <div class="card">
       <h2>潜力基金分析</h2>
-      <div class="no-signal">暂无推荐基金</div>
+      <div class="potential-group"><h3>基金池观察名单</h3>
+<p class="watchlist-desc">以下基金池中的基金暂未持有，如需申购请告知，将纳入净值追踪并生成量化信号。</p>
+<div class="watchlist-type"><span class="type-badge">股票型</span>
+<span class="watchlist-item">摩根亚洲股票高息基金(卢森堡)<span class="watchlist-isin">LU0117844026</span></span>
+<span class="watchlist-item">摩根亚洲股票高息基金(香港)<span class="watchlist-isin">HK0000964608</span></span>
+<span class="watchlist-item">东方汇理亚洲智选股票基金<span class="watchlist-isin">LU0573768839</span></span>
+<span class="watchlist-item">摩根亚洲股息基金<span class="watchlist-isin">HK0000151867</span></span>
+<span class="watchlist-item">摩根欧洲动力基金<span class="watchlist-isin">LU0987226023</span></span>
+<span class="watchlist-item">摩根日本基金<span class="watchlist-isin">LU0822047337</span></span>
+<span class="watchlist-item">摩根美国基金<span class="watchlist-isin">LU0053666078</span></span>
+<span class="watchlist-item">摩根环球股票高息基金<span class="watchlist-isin">HK0001099735</span></span>
+</div>
+<div class="watchlist-type"><span class="type-badge">混合型</span>
+<span class="watchlist-item">东方汇理香港组合-灵活配置平稳基金<span class="watchlist-isin">HK0000291861</span></span>
+<span class="watchlist-item">东方汇理香港组合-灵活配置均衡基金<span class="watchlist-isin">HK0001087151</span></span>
+</div>
+<div class="watchlist-type"><span class="type-badge">债券型</span>
+<span class="watchlist-item">东方汇理环球债券基金<span class="watchlist-isin">LU0210817283</span></span>
+<span class="watchlist-item">摩根国际债券基金<span class="watchlist-isin">HK0000055654</span></span>
+<span class="watchlist-item">摩根环球企业债券基金<span class="watchlist-isin">LU0503867672</span></span>
+<span class="watchlist-item">富兰克林西方资产亚洲机会基金<span class="watchlist-isin">IE00B2Q1FD82</span></span>
+</div>
+</div>
     </div>
 
     <!-- 第五板块：量化规则说明 -->
