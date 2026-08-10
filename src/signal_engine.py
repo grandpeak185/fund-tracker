@@ -286,28 +286,40 @@ class SignalEngine:
         current_value = self.fund_market_values.get(fund_id, 0)
         target_value = self.total_value * fund["target_weight"]
         current_weight = self.dynamic_weights.get(fund_id, 0)
+        target_weight_pct = fund["target_weight"] * 100
+        is_overweight = current_value >= target_value
 
         if strength == "strong":
-            redeem_amount = current_value - target_value
+            if is_overweight:
+                redeem_amount = current_value - target_value
+                desc = f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，将仓位从 {current_weight*100:.1f}% 减至 {target_weight_pct:.0f}%"
+            else:
+                redeem_amount = current_value * 0.2
+                desc = f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，获利了结约20%仓位（当前仓位 {current_weight*100:.1f}% 低于目标 {target_weight_pct:.0f}%，因信号触发减仓）"
             return {
                 "type": "redeem", "fund": fund["name_cn"],
                 "current_value": round(current_value, 2),
                 "target_value": round(target_value, 2),
                 "redeem_amount": round(redeem_amount, 2),
-                "description": f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，将仓位从 {current_weight*100:.1f}% 减至 {fund['target_weight']*100:.0f}%",
+                "description": desc,
             }
         elif strength == "medium":
-            excess = current_value - target_value
-            redeem_amount = excess * 0.5
+            if is_overweight:
+                excess = current_value - target_value
+                redeem_amount = excess * 0.5
+                desc = f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，逐步向目标仓位 {target_weight_pct:.0f}% 靠拢"
+            else:
+                redeem_amount = current_value * 0.1
+                desc = f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，获利了结部分仓位（当前仓位 {current_weight*100:.1f}% 低于目标 {target_weight_pct:.0f}%，因信号触发减仓）"
             return {
                 "type": "redeem", "fund": fund["name_cn"],
                 "current_value": round(current_value, 2),
                 "redeem_amount": round(redeem_amount, 2),
-                "description": f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，逐步向目标仓位 {fund['target_weight']*100:.0f}% 靠拢",
+                "description": desc,
             }
         elif strength == "strong_stoploss":
             bottom_value = self.total_value * 0.05
-            redeem_amount = current_value - bottom_value
+            redeem_amount = max(current_value - bottom_value, 0)
             return {
                 "type": "redeem", "fund": fund["name_cn"],
                 "current_value": round(current_value, 2),
