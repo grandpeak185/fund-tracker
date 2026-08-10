@@ -142,14 +142,14 @@ class SignalEngine:
                 "rule": "S-06", "name": "历史极端高位（强）",
                 "detail": f"{fund['name_cn']} 当前价格分位数 {percentile:.1f}%（高于{pct_extreme}%极端线），处于历史极高位置，回调风险极大，建议立即减仓",
                 "action": "sell", "strength": "strong", "score": 35,
-                "suggested_action": self._build_redeem_suggestion(fund_id, "strong"),
+                "suggested_action": self._build_redeem_suggestion(fund_id, "strong", "价格处于历史极端高位"),
             })
         elif percentile >= pct_high:
             signals.append({
                 "rule": "S-06", "name": "历史高位预警",
                 "detail": f"{fund['name_cn']} 当前价格分位数 {percentile:.1f}%（高于{pct_high}%警戒线），接近历史高位，需警惕回调风险",
                 "action": "sell", "strength": "medium", "score": 20,
-                "suggested_action": self._build_redeem_suggestion(fund_id, "medium"),
+                "suggested_action": self._build_redeem_suggestion(fund_id, "medium", "价格处于历史高位预警"),
             })
 
         if percentile <= pct_extreme_low:
@@ -168,19 +168,26 @@ class SignalEngine:
         return signals
 
     def _build_buy_suggestion(self, fund_id):
-        """构建买入建议"""
+        """构建买入建议 - 区分仓位不足和已达标两种场景"""
         fund = next((f for f in self.funds if f["id"] == fund_id), None)
         if not fund:
             return None
         current_value = self.fund_market_values.get(fund_id, 0)
         target_value = self.total_value * fund["target_weight"]
-        buy_amount = target_value - current_value
-        if buy_amount <= 0:
+        current_weight = self.dynamic_weights.get(fund_id, 0)
+        target_weight_pct = fund["target_weight"] * 100
+        is_underweight = current_value < target_value
+
+        if is_underweight:
+            buy_amount = target_value - current_value
+            desc = f"建议申购 {fund['name_cn']} 约 ${buy_amount:,.0f}，将仓位从 {current_weight*100:.1f}% 提升至 {target_weight_pct:.0f}%（价格处于历史低位，逢低布局）"
+        else:
             buy_amount = self.cash_value * 0.1
+            desc = f"建议申购 {fund['name_cn']} 约 ${buy_amount:,.0f}，把握历史低位布局机会（当前仓位 {current_weight*100:.1f}% 已达目标 {target_weight_pct:.0f}%，可用闲置现金小幅加仓）"
         return {
             "type": "buy", "fund": fund["name_cn"],
             "amount": round(buy_amount, 2),
-            "description": f"建议申购 {fund['name_cn']} 约 ${buy_amount:,.0f}，把握历史低位布局机会",
+            "description": desc,
         }
 
     def calculate_moving_averages(self, nav_history):
@@ -249,7 +256,7 @@ class SignalEngine:
                 "rule": "S-01", "name": "止盈信号（强）",
                 "detail": f"累计收益率 {returns*100:.1f}% 已超过强止盈线 {sp_high*100:.0f}%，建议赎回至目标仓位{pct_ctx}",
                 "action": "sell", "strength": "strong", "score": 40,
-                "suggested_action": self._build_redeem_suggestion(fund_id, "strong"),
+                "suggested_action": self._build_redeem_suggestion(fund_id, "strong", "止盈信号"),
             })
         elif returns >= adj_sp_low:
             strength = "medium"
@@ -261,7 +268,7 @@ class SignalEngine:
                 "rule": "S-01", "name": f"止盈信号（{'强·高位调制' if strength == 'strong' else '中'}）",
                 "detail": f"累计收益率 {returns*100:.1f}% 触及止盈区间 [{adj_sp_low*100:.0f}%, {sp_high*100:.0f}%]，可考虑分批减仓{pct_ctx}",
                 "action": "sell", "strength": strength, "score": score,
-                "suggested_action": self._build_redeem_suggestion(fund_id, "medium"),
+                "suggested_action": self._build_redeem_suggestion(fund_id, strength, "止盈信号"),
             })
 
         if returns <= adj_sl_high:
@@ -269,7 +276,7 @@ class SignalEngine:
                 "rule": "S-01", "name": "止损信号（强）",
                 "detail": f"累计收益率 {returns*100:.1f}% 已跌破止损线 {adj_sl_high*100:.0f}%，建议立即止损赎回{pct_ctx}",
                 "action": "sell", "strength": "strong", "score": 40,
-                "suggested_action": self._build_redeem_suggestion(fund_id, "strong_stoploss"),
+                "suggested_action": self._build_redeem_suggestion(fund_id, "strong_stoploss", "止损"),
             })
         elif returns <= sl_low:
             signals.append({
@@ -279,7 +286,10 @@ class SignalEngine:
             })
         return signals
 
-    def _build_redeem_suggestion(self, fund_id, strength):
+    def _build_redeem_suggestion(self, fund_id, strength, reason=""):
+        """构建赎回建议 - 区分超配/低配 × 止盈/历史高位/止损等场景
+        reason: 触发原因，如 "止盈信号"、"价格处于历史极端高位"、"价格处于历史高位预警"、"止损"
+        """
         fund = next((f for f in self.funds if f["id"] == fund_id), None)
         if not fund:
             return None
@@ -288,36 +298,9 @@ class SignalEngine:
         current_weight = self.dynamic_weights.get(fund_id, 0)
         target_weight_pct = fund["target_weight"] * 100
         is_overweight = current_value >= target_value
+        reason = reason or "信号触发"
 
-        if strength == "strong":
-            if is_overweight:
-                redeem_amount = current_value - target_value
-                desc = f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，将仓位从 {current_weight*100:.1f}% 减至 {target_weight_pct:.0f}%"
-            else:
-                redeem_amount = current_value * 0.2
-                desc = f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，获利了结约20%仓位（当前仓位 {current_weight*100:.1f}% 虽低于目标 {target_weight_pct:.0f}%，但因止盈信号触发减仓）"
-            return {
-                "type": "redeem", "fund": fund["name_cn"],
-                "current_value": round(current_value, 2),
-                "target_value": round(target_value, 2),
-                "redeem_amount": round(redeem_amount, 2),
-                "description": desc,
-            }
-        elif strength == "medium":
-            if is_overweight:
-                excess = current_value - target_value
-                redeem_amount = excess * 0.5
-                desc = f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，逐步向目标仓位 {target_weight_pct:.0f}% 靠拢"
-            else:
-                redeem_amount = current_value * 0.1
-                desc = f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，获利了结部分仓位（当前仓位 {current_weight*100:.1f}% 虽低于目标 {target_weight_pct:.0f}%，但因止盈信号触发减仓）"
-            return {
-                "type": "redeem", "fund": fund["name_cn"],
-                "current_value": round(current_value, 2),
-                "redeem_amount": round(redeem_amount, 2),
-                "description": desc,
-            }
-        elif strength == "strong_stoploss":
+        if strength == "strong_stoploss":
             bottom_value = self.total_value * 0.05
             redeem_amount = max(current_value - bottom_value, 0)
             return {
@@ -326,7 +309,32 @@ class SignalEngine:
                 "redeem_amount": round(redeem_amount, 2),
                 "description": f"止损赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，仅保留5%底仓观察",
             }
-        return None
+
+        if strength == "strong":
+            if is_overweight:
+                redeem_amount = current_value - target_value
+                desc = f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，将仓位从 {current_weight*100:.1f}% 减至 {target_weight_pct:.0f}%（{reason}触发）"
+            else:
+                redeem_amount = current_value * 0.2
+                desc = f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，获利了结约20%仓位（当前仓位 {current_weight*100:.1f}% 虽低于目标 {target_weight_pct:.0f}%，但因{reason}触发减仓）"
+        elif strength == "medium":
+            if is_overweight:
+                excess = current_value - target_value
+                redeem_amount = excess * 0.5
+                desc = f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，逐步将仓位从 {current_weight*100:.1f}% 向目标 {target_weight_pct:.0f}% 靠拢（{reason}触发）"
+            else:
+                redeem_amount = current_value * 0.1
+                desc = f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，获利了结部分仓位（当前仓位 {current_weight*100:.1f}% 虽低于目标 {target_weight_pct:.0f}%，但因{reason}触发减仓）"
+        else:
+            return None
+
+        return {
+            "type": "redeem", "fund": fund["name_cn"],
+            "current_value": round(current_value, 2),
+            "target_value": round(target_value, 2),
+            "redeem_amount": round(redeem_amount, 2),
+            "description": desc,
+        }
 
     def check_weight_deviation(self, fund_id):
         signals = []
@@ -348,7 +356,7 @@ class SignalEngine:
                 "suggested_action": {
                     "type": "rebalance_sell", "fund": fund["name_cn"],
                     "amount": round(excess, 2),
-                    "description": f"再平衡: 赎回 {fund['name_cn']} 约 ${excess:,.0f}，使权重回归 {fund['target_weight']*100:.0f}%",
+                    "description": f"再平衡: 赎回 {fund['name_cn']} 约 ${excess:,.0f}，将仓位从 {current_weight*100:.1f}% 减至 {fund['target_weight']*100:.0f}%",
                 },
             })
         elif deviation < -threshold:
@@ -362,7 +370,7 @@ class SignalEngine:
                 "suggested_action": {
                     "type": "rebalance_buy", "fund": fund["name_cn"],
                     "amount": round(shortfall, 2),
-                    "description": f"再平衡: 申购 {fund['name_cn']} 约 ${shortfall:,.0f}，使权重回归 {fund['target_weight']*100:.0f}%",
+                    "description": f"再平衡: 申购 {fund['name_cn']} 约 ${shortfall:,.0f}，将仓位从 {current_weight*100:.1f}% 增至 {fund['target_weight']*100:.0f}%",
                 },
             })
         return signals
