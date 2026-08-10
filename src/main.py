@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from fetch_nav import fetch_all_nav, save_nav_history
 from signal_engine import SignalEngine
-from generate_report import generate_html
+from generate_report import generate_html, calculate_rolling_window, filter_monthly_to_window
 
 CST = timezone(timedelta(hours=8))
 
@@ -94,7 +94,7 @@ def main():
         print(f"  {fund['name_cn']}: ${mv:,.0f} ({w*100:.1f}%)")
     print(f"  现金和存款: ${portfolio_data['cash_value']:,.0f} ({portfolio_data['dynamic_weights']['cash']*100:.1f}%)")
 
-    # 4. 加载月度净值历史（5年回溯，用于价格分位数计算）
+    # 4. 加载月度净值历史（滚动5年窗口，用于价格分位数计算）
     monthly_nav_path = config_path.parent / "data" / "monthly_nav_history.json"
     monthly_nav_history = {}
     if monthly_nav_path.exists():
@@ -104,7 +104,22 @@ def main():
             except json.JSONDecodeError:
                 monthly_nav_history = {}
     total_monthly = sum(len(v.get("monthly_nav", [])) for v in monthly_nav_history.values())
-    print(f"\n  月度净值历史: {total_monthly} 条记录（3只基金 × 5年回溯）")
+    print(f"\n  月度净值历史（原始）: {total_monthly} 条记录")
+
+    # 4b. 计算滚动5年窗口，筛选月末数据
+    win_start, win_end, win_start_display, win_end_display = calculate_rolling_window(monthly_nav_history)
+    if win_start:
+        print(f"  滚动窗口: {win_start_display} 至 {win_end_display}")
+        for fid in list(monthly_nav_history.keys()):
+            original_count = len(monthly_nav_history[fid].get("monthly_nav", []))
+            filtered_nav = filter_monthly_to_window(monthly_nav_history[fid], win_start, win_end)
+            monthly_nav_history[fid] = {
+                "monthly_nav": filtered_nav,
+                "start_date": win_start,
+            }
+            print(f"    {fid}: {original_count} → {len(filtered_nav)} 条月末数据")
+    else:
+        print("  ⚠ 无法计算滚动窗口，使用全部数据")
 
     # 5. 生成信号
     print("\n[3/4] 生成量化信号...")
@@ -128,7 +143,7 @@ def main():
 
     # 打印价格分位数详情
     if "percentile_details" in signal_result:
-        print("\n  价格分位数（5年历史回溯）:")
+        print("\n  价格分位数:")
         for fid, detail in signal_result["percentile_details"].items():
             pct = detail["percentile"]
             bar = "█" * int(pct / 5) + "░" * (20 - int(pct / 5))
