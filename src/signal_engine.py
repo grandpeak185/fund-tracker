@@ -295,7 +295,7 @@ class SignalEngine:
                 desc = f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，将仓位从 {current_weight*100:.1f}% 减至 {target_weight_pct:.0f}%"
             else:
                 redeem_amount = current_value * 0.2
-                desc = f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，获利了结约20%仓位（当前仓位 {current_weight*100:.1f}% 低于目标 {target_weight_pct:.0f}%，因信号触发减仓）"
+                desc = f"建议赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，获利了结约20%仓位（当前仓位 {current_weight*100:.1f}% 虽低于目标 {target_weight_pct:.0f}%，但因止盈信号触发减仓）"
             return {
                 "type": "redeem", "fund": fund["name_cn"],
                 "current_value": round(current_value, 2),
@@ -310,7 +310,7 @@ class SignalEngine:
                 desc = f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，逐步向目标仓位 {target_weight_pct:.0f}% 靠拢"
             else:
                 redeem_amount = current_value * 0.1
-                desc = f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，获利了结部分仓位（当前仓位 {current_weight*100:.1f}% 低于目标 {target_weight_pct:.0f}%，因信号触发减仓）"
+                desc = f"建议分批赎回 {fund['name_cn']} 约 ${redeem_amount:,.0f}，获利了结部分仓位（当前仓位 {current_weight*100:.1f}% 虽低于目标 {target_weight_pct:.0f}%，但因止盈信号触发减仓）"
             return {
                 "type": "redeem", "fund": fund["name_cn"],
                 "current_value": round(current_value, 2),
