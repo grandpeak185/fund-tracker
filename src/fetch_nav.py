@@ -151,20 +151,30 @@ def parse_value_partners_dividend_table(html):
 
 def fetch_jpm_asia_pacific():
     """获取JPM亚太入息基金净值
-    优先尝试 Morningstar API，失败则使用已知快照
+    优先使用 Playwright 渲染 JPM 官网 SPA 页面，
+    备用 Morningstar API，最后回退到已知快照
     """
     source = FUND_SOURCES["jpm_asia_pacific"]
-    ms_id = source.get("morningstar_id", "F00000OCN6")
 
     print(f"  正在抓取 {source['name']}...")
 
-    # 方案1: Morningstar API (有时不稳定，SSL间歇性失败)
+    # 方案1: Playwright 渲染 JPM 官网（最可靠，能处理 SPA + cookie 门 + 专业投资者门）
+    try:
+        pw_result = fetch_jpm_with_playwright(source["url"])
+        if pw_result:
+            print(f"    ✓ Playwright: NAV={pw_result['nav']}, 日期={pw_result['date']}")
+            return {**pw_result, "source": "primary", "isin": source["isin"]}
+    except Exception as e:
+        print(f"    Playwright 失败: {e}")
+
+    # 方案2: Morningstar API (有时不稳定，SSL间歇性失败)
+    ms_id = source.get("morningstar_id", "F00000OCN6")
     ms_result = fetch_from_morningstar(ms_id, source["isin"])
     if ms_result:
         print(f"    ✓ Morningstar API: NAV={ms_result['nav']}, 日期={ms_result['date']}")
-        return {**ms_result, "source": "primary", "isin": source["isin"]}
+        return {**ms_result, "source": "fallback", "isin": source["isin"]}
 
-    # 方案2: 尝试 fonds-super-markt.de
+    # 方案3: 尝试 fonds-super-markt.de
     fsm_url = f"https://www.fonds-super-markt.de/fondsfinder/fondsdetails/lu0784639295-jpm-asia-pacific-income-a-mth-usd/"
     html = fetch_url(fsm_url)
     if html and len(html) > 30000:
@@ -175,8 +185,85 @@ def fetch_jpm_asia_pacific():
 
     # 回退到已知净值
     known = KNOWN_NAV["jpm_asia_pacific"]
-    print(f"    ⚠ 网络抓取失败，使用最近已知净值: NAV={known['nav']}, 日期={known['date']}")
+    print(f"    ⚠ 所有数据源失败，使用最近已知净值: NAV={known['nav']}, 日期={known['date']}")
     return {"nav": known["nav"], "date": known["date"], "source": "known_snapshot", "isin": source["isin"]}
+
+
+def fetch_jpm_with_playwright(url):
+    """使用 Playwright headless browser 渲染 JPM 官网 SPA 并提取净值
+    处理 cookie 同意框 + 专业投资者确认门 + React 渲染等待
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("    Playwright 未安装，跳过")
+        return None
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
+        page = browser.new_page()
+        page.goto(url, wait_until="load", timeout=30000)
+
+        # 1. 处理 cookie 同意框
+        try:
+            btn = page.locator('button:has-text("Alle akzeptieren")')
+            btn.wait_for(timeout=5000)
+            btn.click()
+            page.wait_for_timeout(2000)
+        except Exception:
+            pass
+
+        # 2. 处理专业投资者确认门
+        try:
+            for selector in [
+                'a:has-text("Akzeptieren")',
+                'button:has-text("Akzeptieren")',
+                'a:has-text("Accept")',
+                'button:has-text("Accept")',
+            ]:
+                try:
+                    btn = page.locator(selector).first
+                    if btn.is_visible(timeout=3000):
+                        btn.click()
+                        page.wait_for_timeout(3000)
+                        break
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        # 3. 等待 SPA 渲染 NAV 数据
+        import re as _re
+        for attempt in range(10):
+            page.wait_for_timeout(2000)
+            content = page.evaluate("document.body.innerText")
+            # 匹配: NAV Per DD.MM.YYYY USD xxx,xx
+            m = _re.search(r'NAV\s+Per\s+(\d{2}\.\d{2}\.\d{4})\s+USD\s+([\d,.]+)', content)
+            if m:
+                date_str = convert_date_ddmmyyyy(m.group(1))
+                nav_str = m.group(2).replace(".", "").replace(",", ".")
+                try:
+                    nav = float(nav_str)
+                    if 50 < nav < 200:
+                        browser.close()
+                        return {"nav": nav, "date": date_str}
+                except ValueError:
+                    pass
+            # 更宽松的匹配
+            m2 = _re.search(r'Per\s+(\d{2}\.\d{2}\.\d{4})\s+USD\s+([\d,.]+)', content)
+            if m2:
+                date_str = convert_date_ddmmyyyy(m2.group(1))
+                nav_str = m2.group(2).replace(".", "").replace(",", ".")
+                try:
+                    nav = float(nav_str)
+                    if 50 < nav < 200:
+                        browser.close()
+                        return {"nav": nav, "date": date_str}
+                except ValueError:
+                    pass
+
+        browser.close()
+        return None
 
 
 def fetch_from_morningstar(ms_id, isin):

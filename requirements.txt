@@ -1,7 +1,8 @@
-# 基金追踪器依赖（使用Python标准库，无需额外安装）
-# fetch_nav.py 使用 urllib（标准库）
+# 基金追踪器依赖
+# Playwright 用于渲染 JPMorgan 官网 SPA 页面（headless browser）
+playwright>=1.40.0
+
+# 以下模块使用 Python 标准库，无需额外安装:
+# fetch_nav.py 使用 urllib, json, re（标准库）
 # signal_engine.py 使用 json（标准库）
-# generate_report.py 使用 json（标准库）
-#
-# 如需增强功能，可取消以下注释:
-# requests>=2.28.0
+# generate_report.py 使用 json, re, calendar（标准库）
