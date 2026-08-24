@@ -9,15 +9,15 @@
       "name_cn": "惠理高息股票基金",
       "name_en": "Value Partners High Dividend Stocks Fund",
       "share_class": "A2 MDis USD",
-      "isin": "HK0000288784",
+      "isin": "HK0000288743",
       "currency": "USD",
       "cost_investment": 48095,
       "target_weight": 0.15,
       "cost_nav": 10.12,
       "ncb_available": true,
-      "nav_source": "morningstar",
-      "morningstar_id": "F00000YIGY",
-      "nav_url": "https://www.morningstar.hk/hk/funds/snapshot/snapshot.aspx?id=F00000YIGY"
+      "nav_source": "value_partners_api",
+      "morningstar_id": "F00000OCN6",
+      "nav_url": "https://www.valuepartners-group.com/sc/investment-solutions/institutional-funds/value-partners-high-dividend-stocks-fund-sc/"
     },
     {
       "id": "jpm_asia_pacific",
@@ -54,7 +54,7 @@
     "currency": "USD"
   },
   "ncb_fund_pool": [
-    {"name_cn": "惠理高息股票基金", "isin": "HK0000288784", "type": "股票型", "geography": "亚洲"},
+    {"name_cn": "惠理高息股票基金", "isin": "HK0000288743", "type": "股票型", "geography": "亚洲"},
     {"name_cn": "JPM亚太入息基金", "isin": "LU0784639295", "type": "股债混合", "geography": "亚太"},
     {"name_cn": "东方汇理收益机遇基金", "isin": "LU1883839398", "type": "多元资产", "geography": "环球"},
     {"name_cn": "摩根亚洲股票高息基金(卢森堡)", "isin": "LU0117844026", "type": "股票型", "geography": "亚洲"},
