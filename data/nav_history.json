@@ -2638,5 +2638,29 @@
         "isin": "LU1883839398"
       }
     }
+  },
+  {
+    "date": "2026-11-11",
+    "timestamp": "2026-11-11T08:59:15.153991+08:00",
+    "funds": {
+      "value_partners": {
+        "nav": 11.5,
+        "date": "2026-11-09",
+        "source": "primary",
+        "isin": "HK0000288743"
+      },
+      "jpm_asia_pacific": {
+        "nav": 116.78,
+        "date": "2026-11-10",
+        "source": "primary",
+        "isin": "LU0784639295"
+      },
+      "amundi_income": {
+        "nav": 83.5,
+        "date": "2026-11-09",
+        "source": "primary",
+        "isin": "LU1883839398"
+      }
+    }
   }
 ]
